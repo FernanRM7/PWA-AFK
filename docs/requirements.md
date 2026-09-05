@@ -4,25 +4,46 @@
 
 ## 1. Problema y contexto
 
-Expliquen qué dificultad de inspección o mantenimiento resolverán, por qué importa la conectividad y qué queda fuera. Debe entenderse el problema sin conocer su equipo.
+El seguimiento de hallazgos de mantenimiento en laboratorios puede perder continuidad cuando la información se registra en medios separados o no está disponible en el momento de revisar un espacio. Esto dificulta saber qué observaciones siguen pendientes, cuáles requieren atención y qué inspección las originó. La conectividad intermitente es relevante porque una persona puede realizar una inspección dentro de un laboratorio sin conexión estable; si el registro depende exclusivamente de la red, la captura puede retrasarse o perderse.
 
-Ejemplo de inicio: «Un registro interrumpido por la falta de conexión dificulta dar seguimiento a un hallazgo». Adapten y completen: no lo presenten como un diagnóstico real de la UTT sin evidencia.
+El producto futuro será una aplicación para consultar inspecciones, registrar nuevos hallazgos y dar seguimiento a su estado. En esta actividad el alcance se limita a conservar y verificar el starter de Next.js, cuya pantalla muestra tres inspecciones sintéticas. No se implementan todavía el registro, filtros, almacenamiento local, sincronización, instalación PWA, autenticación, notificaciones ni integración con sistemas institucionales. El caso no pretende describir un diagnóstico real de la UTT; se utilizarán únicamente datos ficticios.
 
 ## 2. Usuarios y escenarios
 
-Identifiquen a los usuarios y escriban al menos dos escenarios, uno con conectividad intermitente. En cada escenario indiquen situación inicial, acción y resultado esperado.
+### Usuarios
 
-Ejemplo de formato: «Una persona encargada de inspección detecta un hallazgo sin conexión; registra el hallazgo y espera conservarlo para enviarlo después». Es una capacidad futura, no una función exigida en Semana 1.
+- **Usuario principal: docente o encargado de laboratorio.** Consulta inspecciones recientes, identifica hallazgos pendientes y revisa su estado para coordinar acciones de mantenimiento.
+- **Usuario secundario: persona encargada de realizar inspecciones.** Captura los datos de una revisión y reporta hallazgos desde el laboratorio, incluso cuando la conexión es intermitente.
+
+### Escenario E-01 — Consulta con conectividad disponible
+
+- **Situación inicial:** el encargado de laboratorio necesita revisar las inspecciones recientes de distintos laboratorios y localizar cuáles tienen hallazgos que requieren atención.
+- **Acción:** abre la aplicación, consulta el listado y filtra o identifica los registros por laboratorio, fecha o estado.
+- **Resultado esperado:** observa la información correspondiente y puede distinguir las inspecciones sin incidencias de aquellas con hallazgos pendientes.
+- **Alcance:** la visualización de los tres registros sintéticos pertenece a Semana 1; los filtros y la consulta de datos registrados son requisitos futuros.
+
+### Escenario E-02 — Registro con conectividad intermitente
+
+- **Situación inicial:** la persona inspectora encuentra un hallazgo durante una revisión y la conexión de red se interrumpe.
+- **Acción:** captura laboratorio, fecha, estado y hallazgos; la aplicación conserva el registro localmente y lo prepara para sincronizarlo cuando vuelva la conexión.
+- **Resultado esperado:** el registro no se pierde, queda identificado como pendiente de sincronización y posteriormente se envía al sistema central sin duplicarse.
+- **Alcance:** es un escenario y requisito futuro; esta semana no se implementan almacenamiento local ni sincronización.
 
 ## 3. Requisitos funcionales
 
-Describan acciones del producto vinculadas a sus escenarios. Cada requisito lleva identificador, acción, condición de aceptación y alcance temporal.
+Los requisitos siguientes se vinculan con los escenarios anteriores y distinguen el starter actual de las capacidades futuras. Una condición de aceptación describe un resultado observable, no una intención general.
 
-| ID | Acción del producto | Condición observable de aceptación | Ahora o futuro |
-|---|---|---|---|
-| RF-01 (ejemplo, adaptar) | Mostrar los registros sintéticos del starter | Al abrir la página se ven las tres inspecciones proporcionadas | Semana 1 |
+| ID | Escenario relacionado | Acción del producto | Condición observable de aceptación | Ahora o futuro |
+|---|---|---|---|---|
+| RF-01 | E-01 | Mostrar el listado de inspecciones sintéticas proporcionadas por el starter | Al abrir la página se observan tres inspecciones con laboratorio, fecha, responsable, estado y hallazgos | Semana 1 |
+| RF-02 | E-01 | Consultar inspecciones por laboratorio, fecha o estado | Al seleccionar un criterio válido, el listado muestra únicamente los registros que cumplen ese criterio y conserva sus datos | Futuro |
+| RF-03 | E-01 | Identificar inspecciones con hallazgos pendientes | Cada inspección con hallazgos o estado de atención se distingue visualmente de una inspección sin incidencias | Futuro |
+| RF-04 | E-02 | Registrar una inspección | Al guardar datos válidos de laboratorio, fecha, estado y hallazgos, aparece un registro con esos mismos valores | Futuro |
+| RF-05 | E-02 | Conservar un registro cuando la conexión es intermitente | Si la conexión se pierde durante el registro, la información permanece disponible en el dispositivo y se marca como pendiente de sincronización | Futuro |
+| RF-06 | E-02 | Sincronizar registros pendientes al recuperar la conexión | Cuando vuelve la conexión, el registro local se envía una sola vez y cambia a estado sincronizado sin crear duplicados | Futuro |
+| RF-07 | E-01, E-02 | Actualizar el estado de un hallazgo | Al cambiar el estado a una opción válida, el registro muestra el nuevo estado y este permanece al volver a consultarlo | Futuro |
 
-Un requisito como «gestionar inspecciones» necesita precisar qué acción y qué resultado se observarán. Agreguen los requisitos que cubran sus escenarios sin inventar que ya están implementados.
+Los requisitos RF-02 a RF-07 describen el producto futuro y no deben presentarse como funcionalidades implementadas en Semana 1.
 
 ## 4. Requisitos no funcionales
 
