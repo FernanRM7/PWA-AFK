@@ -2,7 +2,7 @@
 
 > Un solo archivo compartido. Cada integrante conservará su propia sección y añadirá evidencia verificable de su contribución. El SHA final se entrega en Classroom después del último commit.
 
-- Grupo y equipo: por completar
+- Grupo y equipo: "B" 9B-E11
 - Repositorio del equipo: https://github.com/FernanRM7/PWA-AFK
 
 ## Integrante: Fernando Spencer Rodriguez Mendoza
