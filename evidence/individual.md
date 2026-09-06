@@ -25,14 +25,22 @@
 - **Limitación, dificultad o riesgo que identifiqué:** mi mayor riesgo no es técnico sino de contenido la comparación de alternativas y la validación futura son un análisis argumentado, no algo que un script pueda verificar si el equipo o el docente ve que falta profundidad en algún tema, habría que ajustar el documento.
 - **Uso de IA:** usé un asistente de IA conversacional para estructurar y redactar un primer borrador de cada sección del ADR , a partir del contexto real del proyecto yo decidí qué contexto compartir,la conecté con los escenarios y requisitos que ya había definido el equipo, corregí la redacción del documento final y elegí qué mantener. No acepté nada sin revisarlo ni afirmé validaciones que todavía no se han hecho.
 
-## Integrante: por completar
+## Integrante: Kevin Rojas Marinez — RNF, datos/límites, criterios de aceptación y ejecución local
 
-- Mi contribución concreta y enlace a archivo, commit anterior o revisión:
-- Decisión que puedo explicar y por qué:
-- Comando o prueba proporcionada que ejecuté:
-- Resultado real que observé:
-- Qué verifica esa prueba y qué no verifica:
-- Limitación, dificultad o riesgo que identifiqué:
-- Uso de IA: herramienta, propósito, partes influenciadas y validación propia:
+- **Mi contribución concreta y enlace:** redacción completa de secciones 4 (RNF medibles: reproducibilidad, accesibilidad, seguridad, privacidad, rendimiento, operación offline futura), 5 (Datos sintéticos y límites: 8 campos ficticios en tabla + exclusiones estrictas) y 6 (Criterios de aceptación Semana 1: 7 criterios trazables a comandos con resultados reales) en `docs/requirements.md`. Commit: [`7b7331f`](https://github.com/FernanRM7/PWA-AFK/commit/7b7331f). Ejecución y documentación de comandos de verificación técnica en Windows.
+- **Decisión que puedo explicar y por qué:** separar mediciones actuales (Semana 1) de metas futuras (Semanas 2–4) en cada RNF; declarar honestamente el fallo de build por EBUSY en Windows como incidencia de entorno, no de código; documentar explícitamente que `verify` no califica análisis documental ni prueba funcionalidades PWA futuras.
+- **Comando o prueba proporcionada que ejecuté:** `npm ci`, `npm test`, `npm run build`, `npm run verify`, `node scripts/verify.mjs --structure` (equivalente a `bash public-tests/check.sh`).
+- **Resultado real que observé:**
+  - `npm ci`: PASS (28 paquetes instalados, 2 high vulns transitivas en Next.js 14.2.35)
+  - `npm test`: PASS (`starter.spec.mjs: PASS` — valida script build + textos "Inspecciones de laboratorio" y "sintéticos")
+  - `npm run build`: FAIL (exit 1) — Error `EBUSY: resource busy or locked` copiando `.next/server/app/_not-found.html` → `.next/server/pages/404.html` (bug conocido Next.js 14 en Windows con antivirus/editores abiertos)
+  - `npm run verify`: FAIL (exit 1) — Estructura ✓, Test ✓, Build ✗; genera `reports/verification.json` (schemaVersion 2, commit `7b7331f`, node v24.19.0, workingTreeClean: true)
+  - `node scripts/verify.mjs --structure`: PASS ("Estructura presente. No valida contenido, pruebas, build ni secretos.")
+- **Qué verifica esa prueba y qué no verifica:**
+  - `npm test`: Solo smoke test (existencia de script build + strings en página); NO valida RNF, accesibilidad, offline, PWA, ni lógica de negocio.
+  - `npm run build`: Compila TypeScript y genera assets estáticos correctamente; fallo es de filesystem locking (Windows), no de código.
+  - `npm run verify`: Check de estructura + test + build + recopilación de docs para revisión académica; NO califica calidad de redacción ni implementa PWA.
+- **Limitación, dificultad o riesgo que identifiqué:** Build flaky en Windows por EBUSY; riesgo de falso negativo en CI si no se limpia entorno. Mitigación: documentar workaround (cerrar VS Code/antivirus, reintentar) y no bloquear entrega por este fallo conocido. Datos sintéticos limitados a 3 registros inmutables; escalabilidad no probada. `reports/verification.json` está en `.gitignore` y no debe subirse.
+- **Uso de IA:** usé un asistente de IA conversacional para estructurar y redactar las secciones 4, 5 y 6 de `docs/requirements.md`, conectándolas con el starter real y los comandos ejecutados. Revisé personalmente cada comando, verifiqué las salidas y ajusté los umbrales a lo medido; no acepté nada sin validarlo.
 
 > No necesitan inventar un error ni escribir pruebas nuevas. Cada integrante debe reemplazar su sección, documentar resultados reales y explicar los límites de la prueba ejecutada.
