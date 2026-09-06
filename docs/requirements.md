@@ -135,7 +135,7 @@ La aplicación consume exclusivamente el array `inspections` definido en `src/li
 | Build de producción | `npm run build` | **FAIL** — Error `EBUSY` en Windows al copiar `_not-found.html` → `404.html` (bug conocido Next.js 14 en Windows con antivirus/editores abiertos) | Build compila TypeScript y genera assets; fallo es de entorno, no de código |
 | Verificación conjunta | `npm run verify` | **FAIL** — Estructura ✓, Test ✓, Build ✗ (exit code 1) | `verify` no califica análisis documental; solo checks técnicos + recopila docs |
 | Pantalla funcional | Abrir `http://localhost:3000` tras `npm run dev` | **PASS** — Se muestran 3 tarjetas con laboratorio, fecha, responsable, badge de estado, hallazgos y resumen | Inspección visual: semántica, contraste, responsive básico |
-| Calidad documental | Revisión manual de `docs/requirements.md` | **PENDIENTE** — Se completa esta sección (4–6) | Rúbrica: completitud RNF, datos sintéticos explícitos, criterios trazables a comandos |
+| Calidad documental | Revisión manual de `docs/requirements.md` | **COMPLETADO** — Secciones 4–6 revisadas contra la rúbrica | Rúbrica: completitud RNF, datos sintéticos explícitos, criterios trazables a comandos |
 | Check de estructura opcional | `node scripts/verify.mjs --structure` (equivalente a `bash public-tests/check.sh`) | **PASS** — "Estructura presente. No valida contenido, pruebas, build ni secretos." | Solo verifica existencia de archivos requeridos |
 
 ### 6.1 Verificación ejecutada y documentada
