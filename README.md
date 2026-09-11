@@ -15,10 +15,36 @@ npm run dev
 
 Abran `http://localhost:3000` y comprueben las tres inspecciones sintéticas. Detengan el servidor con Ctrl+C.
 
+## Shell de la aplicación
+
+La interfaz separa el shell (`src/components/app-shell.tsx`) del contenido de inspecciones. El shell proporciona los landmarks globales, la superficie de estados y el loader `DotmSquare3`; la página conserva la navegación shadcn, las métricas y los datos sintéticos.
+
+La vista normal muestra el estado de éxito. Para revisar manualmente los cuatro estados:
+
+- `http://localhost:3000/?estado=cargando`
+- `http://localhost:3000/?estado=error`
+- `http://localhost:3000/?estado=vacio`
+- `http://localhost:3000/?estado=exito`
+
+El estado de error ofrece reintento; los estados no implementan persistencia, API ni sincronización. El loader respeta `prefers-reduced-motion`.
+
+### Pruebas manuales del shell
+
+Realizadas en los siguientes entornos:
+
+- **Responsive:** vista de iPhone 13 y iPad de 13 pulgadas; se verificó que no hubiera desbordamiento y que la sidebar pudiera abrirse y cerrarse.
+- **Teclado:** recorrido con `Tab`; se verificaron el enlace para saltar al contenido, los controles operables y el foco visible.
+- **Landmarks:** se verificó la presencia de `header`, `nav`, un único `main` y `footer`.
+- **Estados:** se revisaron las cuatro URLs; cada estado se anuncia correctamente y éxito conserva las inspecciones sintéticas.
+
+La animación del loader se desactiva cuando el usuario indica `prefers-reduced-motion`. El shell mantiene la separación entre navegación futura y funcionalidades todavía no implementadas.
+
 ## Verificación
 
 ```bash
+npm test
 npm run verify
+npm run build
 ```
 
 Ejecuta comprobación de archivos, prueba proporcionada y build; genera `reports/verification.json`. El reporte contiene resultados técnicos y documentos para revisión, no una calificación automática. `make verify` es equivalente. `bash public-tests/check.sh` es un check opcional de estructura.

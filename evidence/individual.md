@@ -43,4 +43,15 @@
 - **Limitación, dificultad o riesgo que identifiqué:** Build flaky en Windows por EBUSY; riesgo de falso negativo en CI si no se limpia entorno. Mitigación: documentar workaround (cerrar VS Code/antivirus, reintentar) y no bloquear entrega por este fallo conocido. Datos sintéticos limitados a 3 registros inmutables; escalabilidad no probada. `reports/verification.json` está en `.gitignore` y no debe subirse.
 - **Uso de IA:** usé un asistente de IA conversacional para estructurar y redactar las secciones 4, 5 y 6 de `docs/requirements.md`, conectándolas con el starter real y los comandos ejecutados. Revisé personalmente cada comando, verifiqué las salidas y ajusté los umbrales a lo medido; no acepté nada sin validarlo.
 
+## Integrante: Fernando Spencer Rodriguez Mendoza — App shell, navegación, estados y accesibilidad
+
+- **Archivos modificados:** `src/components/app-shell.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/components/dotmatrix-loader.css`, `tests/shell-acceptance.spec.mjs`, `package.json`, `README.md`, `evidence/individual.md` y `.gitignore`. También se incorporaron los componentes y utilidades requeridos por el shell.
+- **Decisión de diseño:** separé el shell de los datos sintéticos para que la navegación, los landmarks y los estados puedan evolucionar sin afirmar que ya existen API, persistencia u offline. El estado se puede inspeccionar mediante los parámetros `estado` documentados en README.
+- **Comandos ejecutados:** `npm test`, `npm run verify` y `npm run build`.
+- **Resultados:** `npm test` terminó con `starter.spec.mjs: PASS`, `shell.spec.mjs: PASS` y `shell-acceptance.spec.mjs: PASS`. `npm run build` terminó correctamente con Next.js compilado y las rutas `/`, `/reportes` y `/_not-found` generadas. `npm run verify` terminó con `Verificación técnica: pass`.
+- **Pruebas manuales:** validé los cuatro estados, responsive y ausencia de desbordamiento en vista de iPhone 13 y iPad de 13 pulgadas; probé navegación, foco visible y controles con teclado. También realicé la prueba en desktop usando Safari y validé el comportamiento en Chrome.
+- **Limitación:** la prueba automatizada comprueba la estructura fuente y regresiones relevantes; la experiencia completa de responsive, lector de pantalla y contraste requiere validación manual. Los datos siguen siendo sintéticos y no hay API, persistencia, sincronización ni offline.
+- **Uso de IA:** utilicé un asistente de IA para revisar el alcance del issue, proponer la estructura de la prueba adicional y detectar riesgos de accesibilidad. Revisé los cambios, ejecuté las verificaciones y realicé personalmente las pruebas manuales.
+- **Commit final:** [`27c1b3a`](https://github.com/FernanRM7/PWA-AFK/commit/27c1b3a), `feat: complete app shell navigation and accessibility`.
+
 > No necesitan inventar un error ni escribir pruebas nuevas. Cada integrante debe reemplazar su sección, documentar resultados reales y explicar los límites de la prueba ejecutada.

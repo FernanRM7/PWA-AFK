@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Inspecciones de laboratorio",
-  description: "Proyecto base de Aplicaciones Web Progresivas"
+  description: "Proyecto base de Aplicaciones Web Progresivas",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -13,4 +13,3 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
-
