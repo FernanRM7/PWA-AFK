@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node tests/starter.spec.mjs && node tests/shell.spec.mjs && node tests/shell-acceptance.spec.mjs",
+    "test": "node tests/starter.spec.mjs && node tests/shell.spec.mjs && node tests/shell-acceptance.spec.mjs && vitest run tests/manifest.spec.mjs",
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
@@ -32,6 +32,7 @@
     "autoprefixer": "^10.5.5",
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.11"
   }
 }
