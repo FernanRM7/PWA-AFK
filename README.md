@@ -64,3 +64,22 @@ Inviten a los integrantes y al docente al mismo repositorio privado. Cada person
 - `tests/`: prueba inicial proporcionada; no es una suite completa de comportamiento.
 
 Registren aquí sus supuestos y limitaciones de ejecución. El starter todavía no implementa instalación PWA, offline ni sincronización. No incluyan datos personales reales en el producto, archivos `.env` ni credenciales. La identificación de integrantes se conserva en el repositorio privado y Classroom.
+
+## Manifest e identidad instalable 
+
+**Decisiones:**
+- `start_url` y `scope` quedaron ambos en /, porque toda la aplicación vive en la raíz por ahora.
+- `display: "standalone"` para que, al instalarse, la app se vea sin la barra del navegador.
+- `theme_color` se definió como un azul oscuro (`#0f172a`) de forma provisional, puede ajustarse cuando el equipo defina una paleta de color final.
+- El favicon de la pestaña usa `public/icon.svg` (vectorial), referenciado desde `metadata.icons` en `src/app/layout.tsx`. Es un archivo distinto de los iconos instalables.
+- Los iconos instalables (`public/icons/icon-192.png` y `icon-512.png`) son PNG rasterizados reales, generados a partir de `icon.svg` con `sharp-cli`, porque el manifest necesita formatos rasterizados y no acepta el SVG directamente en todos los navegadores.
+
+**Supuestos:**
+- No se definió aún una identidad visual (colores, logo) oficial del equipo; los colores actuales son un placeholder razonable, sujeto a cambio.
+- Se asume que la app seguirá viviendo en la raíz del dominio (`scope: "/"`), si más adelante se despliega bajo una subruta, habría que ajustar `scope` y `start_url`.
+
+**Límites:**
+- El manifest y los iconos hacen que el navegador pueda ofrecer instalar la app, pero esta semana no se implementa el Service Worker; sin él, la instalación real y el funcionamiento offline todavía no están garantizados.
+- La prueba (`tests/manifest.spec.mjs`, con Vitest) valida estructura, campos y existencia de archivos — no valida que el ícono se vea bien en cada plataforma, ni el comportamiento real de instalación en un dispositivo.
+
+**Verificación agregada:** `npm test` ahora corre `tests/starter.spec.mjs` y `tests/manifest.spec.mjs` (Vitest) en secuencia, sin tocar el archivo original. `npm run verify` sigue funcionando igual y ya incluye ambas pruebas.
