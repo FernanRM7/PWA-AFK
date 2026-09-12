@@ -12,7 +12,7 @@
 - **Limitación:** Vitest no prueba el navegador real ni garantiza instalación/offline; el proyecto aún no tiene Service Worker. Tampoco se usaron datos reales, red ni servicios privados. `npm ci` informó vulnerabilidades transitivas que no corregí para no ampliar el alcance.
 - **Cambio defendible en vivo:** puedo mostrar la suite ejecutando el starter sin cambios, las dos suites TypeScript en Vitest y una regresión controlada al retirar temporalmente un campo requerido del manifest, que produce una aserción fallida y vuelve a pasar al restaurarlo.
 - **Uso de IA:** utilicé un asistente de IA para organizar la configuración, proponer las aserciones y estructurar la documentación. Revisé los archivos, mantuve intacta la prueba proporcionada y ejecuté personalmente los comandos reportados.
-- **Commit de entrega:** se registrará en este mismo archivo con el SHA final de la rama compartida `feat/week-02-pwa-shell`.
+- **Commit de entrega:** [`e9c89a8`](https://github.com/FernanRM7/PWA-AFK/commit/e9c89a84d6a5b5170caa789abbd22515cf4ecf13), en la rama compartida `feat/week-02-pwa-shell`.
 
 > Un solo archivo compartido. Cada integrante conservará su propia sección y añadirá evidencia verificable de su contribución. El SHA final se entrega en Classroom después del último commit.
 
