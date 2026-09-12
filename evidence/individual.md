@@ -1,4 +1,18 @@
 # Evidencia individual del equipo
+> No necesitan inventar un error ni escribir pruebas nuevas. Cada integrante debe reemplazar su sección, documentar resultados reales y explicar los límites de la prueba ejecutada.
+
+## Integrante: Kevin Rojas Marinez - Vitest, pruebas TypeScript y evidencia de Semana 2
+
+- **Contribución concreta y enlace:** configuré `vitest.config.mts`, los scripts `test`, `test:starter` y `test:vitest` en `package.json`, convertí la prueba del manifest a `tests/manifest.spec.ts` y agregué `tests/inspections.spec.ts`. `tests/starter.spec.mjs` permaneció intacto y no fue migrado.
+- **Decisión que puedo explicar y por qué:** mantuve la prueba proporcionada y las pruebas JavaScript del shell como comandos Node separados; Vitest queda como tarea independiente para las pruebas TypeScript. Así `npm test` conserva la cobertura existente y `npm run test --if-present -- --run` entrega el argumento directamente a Vitest.
+- **Comandos ejecutados:** `npm ci`, `npm test`, `npm run test --if-present -- --run` y `git status --short package-lock.json`.
+- **Resultado real observado:** `npm ci` terminó correctamente y no modificó `package-lock.json`; `npm test` terminó con código 0, mostró `starter.spec.mjs: PASS`, `shell.spec.mjs: PASS`, `shell-acceptance.spec.mjs: PASS` y Vitest reportó `Test Files 2 passed` y `Tests 6 passed`; el comando con `--run` también terminó con código 0.
+- **Regresión que detectan las pruebas:** la suite falla si se elimina un campo requerido del manifest, un icono declarado, un registro sintético o se introduce un estado distinto de `ok`/`attention`. Es una aserción sobre archivos y datos reales del proyecto, no un test vacío de arranque.
+- **Pruebas manuales:** documenté en `README.md` pasos, esperado y observado para responsive móvil/escritorio, carga/error/vacío/éxito, teclado, foco visible, manifest e icono SVG.
+- **Limitación:** Vitest no prueba el navegador real ni garantiza instalación/offline; el proyecto aún no tiene Service Worker. Tampoco se usaron datos reales, red ni servicios privados. `npm ci` informó vulnerabilidades transitivas que no corregí para no ampliar el alcance.
+- **Cambio defendible en vivo:** puedo mostrar la suite ejecutando el starter sin cambios, las dos suites TypeScript en Vitest y una regresión controlada al retirar temporalmente un campo requerido del manifest, que produce una aserción fallida y vuelve a pasar al restaurarlo.
+- **Uso de IA:** utilicé un asistente de IA para organizar la configuración, proponer las aserciones y estructurar la documentación. Revisé los archivos, mantuve intacta la prueba proporcionada y ejecuté personalmente los comandos reportados.
+- **Commit de entrega:** se registrará en este mismo archivo con el SHA final de la rama compartida `feat/week-02-pwa-shell`.
 
 > Un solo archivo compartido. Cada integrante conservará su propia sección y añadirá evidencia verificable de su contribución. El SHA final se entrega en Classroom después del último commit.
 
@@ -56,7 +70,7 @@
 
 ## Integrante: Jaime Arian Pablo Rosales — Manifest, metadata e iconos
 
-- **Mi contribución concreta y enlace:** creé `public/manifest.webmanifest` con los campos requeridos (name, short_name, description, start_url, scope, display, lang, background_color, theme_color), generé los iconos instalables `public/icons/icon-192.png` y `public/icons/icon-512.png` (PNG rasterizados reales a partir de `public/icon.svg`), actualicé `src/app/layout.tsx` para referenciar el manifest y el favicon vía `metadata`, y agregué la prueba `tests/manifest.spec.mjs` con Vitest. Commit: [`8ec0cf8`](https://github.com/FernanRM7/PWA-AFK/commit/8ec0cf8).
+- **Mi contribución concreta y enlace:** creé `public/manifest.webmanifest` con los campos requeridos (name, short_name, description, start_url, scope, display, lang, background_color, theme_color), generé los iconos instalables `public/icons/icon-192.png` y `public/icons/icon-512.png` (PNG rasterizados reales a partir de `public/icon.svg`), actualicé `src/app/layout.tsx` para referenciar el manifest y el favicon vía `metadata`, y agregué la prueba `tests/manifest.spec.ts` con Vitest. Commit: [`8ec0cf8`](https://github.com/FernanRM7/PWA-AFK/commit/8ec0cf8).
 - **Decisión que puedo explicar y por qué:** usé `display: "standalone"` para que la app se sienta instalada sin la barra del navegador, y fijé `start_url` y `scope` en `/` porque toda la aplicación vive en la raíz. Separé el favicon SVG de la pestaña (`icon.svg`) de los iconos instalables del manifest (PNG), porque el manifest necesita formatos rasterizados y no acepta SVG en todos los navegadores. Para no tocar `tests/starter.spec.mjs`, agregué la prueba nueva como un archivo separado y encadené su ejecución en el script `test` de `package.json`.
 - **Comando o prueba proporcionada que ejecuté:** `npm install -D vitest`, `npm test` (corre `starter.spec.mjs` y `manifest.spec.mjs`) y `npm run verify`.
 - **Resultado real que observé:** `starter.spec.mjs: PASS`; `manifest.spec.mjs` con Vitest: 8/8 pruebas en verde ,  `npm run verify` terminó con `Verificación técnica: pass`, build de Next.js compiló correctamente (4 rutas estáticas generadas).

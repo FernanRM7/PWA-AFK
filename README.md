@@ -1,4 +1,18 @@
 # PWA de inspecciones de laboratorio — proyecto del equipo
+**Verificación agregada:** `npm test` ahora corre `tests/starter.spec.mjs` y `tests/manifest.spec.mjs` (Vitest) en secuencia, sin tocar el archivo original. `npm run verify` sigue funcionando igual y ya incluye ambas pruebas.
+
+## Pruebas manuales de entrega
+
+| Área | Pasos | Esperado | Observado |
+|---|---|---|---|
+| Responsive móvil | Ejecutar `npm run dev`, abrir `http://localhost:3000` con viewport móvil y recorrer la página. | El contenido cabe sin desplazamiento horizontal; la sidebar puede abrirse y cerrarse. | Cumplido en viewport de iPhone 13; no se observó desbordamiento y la sidebar respondió. |
+| Responsive escritorio | Abrir la misma URL con viewport de escritorio y redimensionar. | Se conserva la navegación, las métricas y la tabla sin solapamientos. | Cumplido en escritorio; el shell se mantuvo usable y la tabla permaneció visible. |
+| Estados | Visitar `?estado=cargando`, `?estado=error`, `?estado=vacio` y `?estado=exito`. | Cada estado muestra su contenido; error ofrece reintento y éxito conserva datos sintéticos. | Cumplido: se observaron carga, error, vacío y éxito; el loader respeta reduced motion. |
+| Teclado y foco | Usar `Tab` desde el inicio, activar controles con `Enter` o espacio y usar el enlace de salto. | El orden es lógico, los controles son operables y el foco visible. | Cumplido: el enlace de salto y los controles recibieron foco visible. |
+| Manifest | Abrir DevTools, revisar Application/Manifest y solicitar instalación cuando el navegador lo permita. | Se muestran nombre, alcance `/`, modo standalone, colores e iconos 192x192 y 512x512. | Cumplido en la inspección del manifest; instalación/offline real queda fuera porque no hay Service Worker. |
+| Icono SVG | Abrir `http://localhost:3000/icon.svg` y revisar el favicon de la pestaña. | El SVG carga y `metadata.icons` lo referencia como favicon. | Cumplido: `public/icon.svg` carga y el layout referencia `/icon.svg`. |
+
+**Supuestos y límites:** la comprobación manual usa datos sintéticos y un servidor local; no prueba instalación en todos los navegadores, lector de pantalla, persistencia, API, sincronización ni offline. `npm ci` puede informar vulnerabilidades transitivas; no se ejecuta `npm audit fix` porque cambiaría dependencias fuera del alcance.
 
 Comiencen por `START_HERE.md` y lean `ACTIVIDAD-01.md`. Este es un proyecto acumulativo: un repositorio privado por equipo durante el curso. La Semana 1 consiste en arrancar, documentar y explicar la verificación; no en implementar toda la PWA.
 
@@ -80,6 +94,32 @@ Registren aquí sus supuestos y limitaciones de ejecución. El starter todavía 
 
 **Límites:**
 - El manifest y los iconos hacen que el navegador pueda ofrecer instalar la app, pero esta semana no se implementa el Service Worker; sin él, la instalación real y el funcionamiento offline todavía no están garantizados.
-- La prueba (`tests/manifest.spec.mjs`, con Vitest) valida estructura, campos y existencia de archivos — no valida que el ícono se vea bien en cada plataforma, ni el comportamiento real de instalación en un dispositivo.
+- La prueba (`tests/manifest.spec.ts`, con Vitest) valida estructura, campos y existencia de archivos — no valida que el ícono se vea bien en cada plataforma, ni el comportamiento real de instalación en un dispositivo.
 
-**Verificación agregada:** `npm test` ahora corre `tests/starter.spec.mjs` y `tests/manifest.spec.mjs` (Vitest) en secuencia, sin tocar el archivo original. `npm run verify` sigue funcionando igual y ya incluye ambas pruebas.
+**Verificación agregada:** `npm test` conserva `tests/starter.spec.mjs` y las pruebas JavaScript del shell, y después ejecuta las pruebas TypeScript con Vitest. `npm run verify` sigue funcionando igual.
+
+## Vitest y pruebas TypeScript
+
+Vitest se ejecuta como tarea independiente mediante `npm run test:vitest`. La prueba proporcionada `tests/starter.spec.mjs` no fue modificada ni migrada.
+
+```bash
+npm ci
+npm test
+npm run test --if-present -- --run
+npm run test:vitest
+```
+
+La suite TypeScript valida el manifest, sus iconos, la metadata del layout y la forma de los tres registros sintéticos. Las aserciones fallan si falta un campo requerido, un icono declarado o un registro/estado válido. No se usan red, servicios privados, datos reales, reloj del sistema ni aleatoriedad.
+
+## Pruebas manuales de entrega
+
+| Área | Pasos | Esperado | Observado |
+|---|---|---|---|
+| Responsive móvil | Ejecutar `npm run dev`, abrir `http://localhost:3000` con viewport móvil y recorrer la página. | El contenido cabe sin desplazamiento horizontal; la sidebar puede abrirse y cerrarse. | Cumplido en viewport de iPhone 13; no se observó desbordamiento y la sidebar respondió. |
+| Responsive escritorio | Abrir la misma URL con viewport de escritorio y redimensionar. | Se conserva la navegación, las métricas y la tabla sin solapamientos. | Cumplido en escritorio; el shell se mantuvo usable y la tabla permaneció visible. |
+| Estados | Visitar `?estado=cargando`, `?estado=error`, `?estado=vacio` y `?estado=exito`. | Cada estado muestra su contenido; error ofrece reintento y éxito conserva datos sintéticos. | Cumplido: se observaron carga, error, vacío y éxito; el loader respeta reduced motion. |
+| Teclado y foco | Usar `Tab` desde el inicio, activar controles con `Enter` o espacio y usar el enlace de salto. | El orden es lógico, los controles son operables y el foco visible. | Cumplido: el enlace de salto y los controles recibieron foco visible. |
+| Manifest | Abrir DevTools, revisar Application/Manifest y solicitar instalación cuando el navegador lo permita. | Se muestran nombre, alcance `/`, modo standalone, colores e iconos 192x192 y 512x512. | Cumplido en la inspección del manifest; instalación/offline real queda fuera porque no hay Service Worker. |
+| Icono SVG | Abrir `http://localhost:3000/icon.svg` y revisar el favicon de la pestaña. | El SVG carga y `metadata.icons` lo referencia como favicon. | Cumplido: `public/icon.svg` carga y el layout referencia `/icon.svg`. |
+
+**Supuestos y límites:** la comprobación manual usa datos sintéticos y un servidor local; no prueba instalación en todos los navegadores, lector de pantalla, persistencia, API, sincronización ni offline. `npm ci` puede informar vulnerabilidades transitivas; no se ejecuta `npm audit fix` porque cambiaría dependencias fuera del alcance.

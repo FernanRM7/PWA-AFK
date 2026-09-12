@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node tests/starter.spec.mjs && node tests/shell.spec.mjs && node tests/shell-acceptance.spec.mjs && vitest run tests/manifest.spec.mjs",
+    "test": "npm run test:starter && vitest run",
+    "test:starter": "node tests/starter.spec.mjs && node tests/shell.spec.mjs && node tests/shell-acceptance.spec.mjs",
+    "test:vitest": "vitest run",
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
