@@ -1,4 +1,5 @@
 # PWA de inspecciones de laboratorio — proyecto del equipo
+**Verificación agregada:** `npm test` conserva las pruebas existentes y ejecuta las pruebas TypeScript con Vitest. `npm run verify` sigue funcionando igual.
 
 Comiencen por `START_HERE.md` y lean `ACTIVIDAD-01.md`. Este es un proyecto acumulativo: un repositorio privado por equipo durante el curso. La Semana 1 consiste en arrancar, documentar y explicar la verificación; no en implementar toda la PWA.
 
@@ -15,10 +16,36 @@ npm run dev
 
 Abran `http://localhost:3000` y comprueben las tres inspecciones sintéticas. Detengan el servidor con Ctrl+C.
 
+## Shell de la aplicación
+
+La interfaz separa el shell (`src/components/app-shell.tsx`) del contenido de inspecciones. El shell proporciona los landmarks globales, la superficie de estados y el loader `DotmSquare3`; la página conserva la navegación shadcn, las métricas y los datos sintéticos.
+
+La vista normal muestra el estado de éxito. Para revisar manualmente los cuatro estados:
+
+- `http://localhost:3000/?estado=cargando`
+- `http://localhost:3000/?estado=error`
+- `http://localhost:3000/?estado=vacio`
+- `http://localhost:3000/?estado=exito`
+
+El estado de error ofrece reintento; los estados no implementan persistencia, API ni sincronización. El loader respeta `prefers-reduced-motion`.
+
+### Pruebas manuales del shell
+
+Realizadas en los siguientes entornos:
+
+- **Responsive:** vista de iPhone 13 y iPad de 13 pulgadas; se verificó que no hubiera desbordamiento y que la sidebar pudiera abrirse y cerrarse.
+- **Teclado:** recorrido con `Tab`; se verificaron el enlace para saltar al contenido, los controles operables y el foco visible.
+- **Landmarks:** se verificó la presencia de `header`, `nav`, un único `main` y `footer`.
+- **Estados:** se revisaron las cuatro URLs; cada estado se anuncia correctamente y éxito conserva las inspecciones sintéticas.
+
+La animación del loader se desactiva cuando el usuario indica `prefers-reduced-motion`. El shell mantiene la separación entre navegación futura y funcionalidades todavía no implementadas.
+
 ## Verificación
 
 ```bash
+npm test
 npm run verify
+npm run build
 ```
 
 Ejecuta comprobación de archivos, prueba proporcionada y build; genera `reports/verification.json`. El reporte contiene resultados técnicos y documentos para revisión, no una calificación automática. `make verify` es equivalente. `bash public-tests/check.sh` es un check opcional de estructura.
@@ -38,3 +65,48 @@ Inviten a los integrantes y al docente al mismo repositorio privado. Cada person
 - `tests/`: prueba inicial proporcionada; no es una suite completa de comportamiento.
 
 Registren aquí sus supuestos y limitaciones de ejecución. El starter todavía no implementa instalación PWA, offline ni sincronización. No incluyan datos personales reales en el producto, archivos `.env` ni credenciales. La identificación de integrantes se conserva en el repositorio privado y Classroom.
+
+## Manifest e identidad instalable 
+
+**Decisiones:**
+- `start_url` y `scope` quedaron ambos en /, porque toda la aplicación vive en la raíz por ahora.
+- `display: "standalone"` para que, al instalarse, la app se vea sin la barra del navegador.
+- `theme_color` se definió como un azul oscuro (`#0f172a`) de forma provisional, puede ajustarse cuando el equipo defina una paleta de color final.
+- El favicon de la pestaña usa `public/icon.svg` (vectorial), referenciado desde `metadata.icons` en `src/app/layout.tsx`. Es un archivo distinto de los iconos instalables.
+- Los iconos instalables (`public/icons/icon-192.png` y `icon-512.png`) son PNG rasterizados reales, generados a partir de `icon.svg` con `sharp-cli`, porque el manifest necesita formatos rasterizados y no acepta el SVG directamente en todos los navegadores.
+
+**Supuestos:**
+- No se definió aún una identidad visual (colores, logo) oficial del equipo; los colores actuales son un placeholder razonable, sujeto a cambio.
+- Se asume que la app seguirá viviendo en la raíz del dominio (`scope: "/"`), si más adelante se despliega bajo una subruta, habría que ajustar `scope` y `start_url`.
+
+**Límites:**
+- El manifest y los iconos hacen que el navegador pueda ofrecer instalar la app, pero esta semana no se implementa el Service Worker; sin él, la instalación real y el funcionamiento offline todavía no están garantizados.
+- La prueba (`tests/manifest.spec.ts`, con Vitest) valida estructura, campos y existencia de archivos — no valida que el ícono se vea bien en cada plataforma, ni el comportamiento real de instalación en un dispositivo.
+
+**Verificación agregada:** `npm test` conserva `tests/starter.spec.mjs` y las pruebas JavaScript del shell, y después ejecuta las pruebas TypeScript con Vitest. `npm run verify` sigue funcionando igual.
+
+## Vitest y pruebas TypeScript
+
+Vitest se ejecuta como tarea independiente mediante `npm run test:vitest`. La prueba proporcionada `tests/starter.spec.mjs` no fue modificada ni migrada.
+
+```bash
+npm ci
+npm test
+npm run test --if-present -- --run
+npm run test:vitest
+```
+
+La suite TypeScript valida el manifest, sus iconos, la metadata del layout y la forma de los tres registros sintéticos. Las aserciones fallan si falta un campo requerido, un icono declarado o un registro/estado válido. No se usan red, servicios privados, datos reales, reloj del sistema ni aleatoriedad.
+
+## Pruebas manuales de entrega
+
+| Área | Pasos | Esperado | Observado |
+|---|---|---|---|
+| Responsive móvil | Ejecutar `npm run dev`, abrir `http://localhost:3000` con viewport móvil y recorrer la página. | El contenido cabe sin desplazamiento horizontal; la sidebar puede abrirse y cerrarse. | Cumplido en viewport de iPhone 13; no se observó desbordamiento y la sidebar respondió. |
+| Responsive escritorio | Abrir la misma URL con viewport de escritorio y redimensionar. | Se conserva la navegación, las métricas y la tabla sin solapamientos. | Cumplido en escritorio; el shell se mantuvo usable y la tabla permaneció visible. |
+| Estados | Visitar `?estado=cargando`, `?estado=error`, `?estado=vacio` y `?estado=exito`. | Cada estado muestra su contenido; error ofrece reintento y éxito conserva datos sintéticos. | Cumplido: se observaron carga, error, vacío y éxito; el loader respeta reduced motion. |
+| Teclado y foco | Usar `Tab` desde el inicio, activar controles con `Enter` o espacio y usar el enlace de salto. | El orden es lógico, los controles son operables y el foco visible. | Cumplido: el enlace de salto y los controles recibieron foco visible. |
+| Manifest | Abrir DevTools, revisar Application/Manifest y solicitar instalación cuando el navegador lo permita. | Se muestran nombre, alcance `/`, modo standalone, colores e iconos 192x192 y 512x512. | Cumplido en la inspección del manifest; instalación/offline real queda fuera porque no hay Service Worker. |
+| Icono SVG | Abrir `http://localhost:3000/icon.svg` y revisar el favicon de la pestaña. | El SVG carga y `metadata.icons` lo referencia como favicon. | Cumplido: `public/icon.svg` carga y el layout referencia `/icon.svg`. |
+
+**Supuestos y límites:** la comprobación manual usa datos sintéticos y un servidor local; no prueba instalación en todos los navegadores, lector de pantalla, persistencia, API, sincronización ni offline. `npm ci` puede informar vulnerabilidades transitivas; no se ejecuta `npm audit fix` porque cambiaría dependencias fuera del alcance.

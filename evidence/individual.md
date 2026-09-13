@@ -1,4 +1,18 @@
 # Evidencia individual del equipo
+> No necesitan inventar un error ni escribir pruebas nuevas. Cada integrante debe reemplazar su sección, documentar resultados reales y explicar los límites de la prueba ejecutada.
+
+## Integrante: Kevin Rojas Marinez - Vitest, pruebas TypeScript y evidencia de Semana 2
+
+- **Contribución concreta y enlace:** configuré `vitest.config.mts`, los scripts `test`, `test:starter` y `test:vitest` en `package.json`, convertí la prueba del manifest a `tests/manifest.spec.ts` y agregué `tests/inspections.spec.ts`. `tests/starter.spec.mjs` permaneció intacto y no fue migrado.
+- **Decisión que puedo explicar y por qué:** mantuve la prueba proporcionada y las pruebas JavaScript del shell como comandos Node separados; Vitest queda como tarea independiente para las pruebas TypeScript. Así `npm test` conserva la cobertura existente y `npm run test --if-present -- --run` entrega el argumento directamente a Vitest.
+- **Comandos ejecutados:** `npm ci`, `npm test`, `npm run test --if-present -- --run` y `git status --short package-lock.json`.
+- **Resultado real observado:** `npm ci` terminó correctamente y no modificó `package-lock.json`; `npm test` terminó con código 0, mostró `starter.spec.mjs: PASS`, `shell.spec.mjs: PASS`, `shell-acceptance.spec.mjs: PASS` y Vitest reportó `Test Files 2 passed` y `Tests 6 passed`; el comando con `--run` también terminó con código 0.
+- **Regresión que detectan las pruebas:** la suite falla si se elimina un campo requerido del manifest, un icono declarado, un registro sintético o se introduce un estado distinto de `ok`/`attention`. Es una aserción sobre archivos y datos reales del proyecto, no un test vacío de arranque.
+- **Pruebas manuales:** documenté en `README.md` pasos, esperado y observado para responsive móvil/escritorio, carga/error/vacío/éxito, teclado, foco visible, manifest e icono SVG.
+- **Limitación:** Vitest no prueba el navegador real ni garantiza instalación/offline; el proyecto aún no tiene Service Worker. Tampoco se usaron datos reales, red ni servicios privados. `npm ci` informó vulnerabilidades transitivas que no corregí para no ampliar el alcance.
+- **Cambio defendible en vivo:** puedo mostrar la suite ejecutando el starter sin cambios, las dos suites TypeScript en Vitest y una regresión controlada al retirar temporalmente un campo requerido del manifest, que produce una aserción fallida y vuelve a pasar al restaurarlo.
+- **Uso de IA:** utilicé un asistente de IA para organizar la configuración, proponer las aserciones y estructurar la documentación. Revisé los archivos, mantuve intacta la prueba proporcionada y ejecuté personalmente los comandos reportados.
+- **Commit de entrega:** [`e9c89a8`](https://github.com/FernanRM7/PWA-AFK/commit/e9c89a84d6a5b5170caa789abbd22515cf4ecf13), en la rama compartida `feat/week-02-pwa-shell`.
 
 > Un solo archivo compartido. Cada integrante conservará su propia sección y añadirá evidencia verificable de su contribución. El SHA final se entrega en Classroom después del último commit.
 
@@ -42,5 +56,26 @@
   - `npm run verify`: Check de estructura + test + build + recopilación de docs para revisión académica; NO califica calidad de redacción ni implementa PWA.
 - **Limitación, dificultad o riesgo que identifiqué:** Build flaky en Windows por EBUSY; riesgo de falso negativo en CI si no se limpia entorno. Mitigación: documentar workaround (cerrar VS Code/antivirus, reintentar) y no bloquear entrega por este fallo conocido. Datos sintéticos limitados a 3 registros inmutables; escalabilidad no probada. `reports/verification.json` está en `.gitignore` y no debe subirse.
 - **Uso de IA:** usé un asistente de IA conversacional para estructurar y redactar las secciones 4, 5 y 6 de `docs/requirements.md`, conectándolas con el starter real y los comandos ejecutados. Revisé personalmente cada comando, verifiqué las salidas y ajusté los umbrales a lo medido; no acepté nada sin validarlo.
+
+## Integrante: Fernando Spencer Rodriguez Mendoza — App shell, navegación, estados y accesibilidad
+
+- **Archivos modificados:** `src/components/app-shell.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/components/dotmatrix-loader.css`, `tests/shell-acceptance.spec.mjs`, `package.json`, `README.md`, `evidence/individual.md` y `.gitignore`. También se incorporaron los componentes y utilidades requeridos por el shell.
+- **Decisión de diseño:** separé el shell de los datos sintéticos para que la navegación, los landmarks y los estados puedan evolucionar sin afirmar que ya existen API, persistencia u offline. El estado se puede inspeccionar mediante los parámetros `estado` documentados en README.
+- **Comandos ejecutados:** `npm test`, `npm run verify` y `npm run build`.
+- **Resultados:** `npm test` terminó con `starter.spec.mjs: PASS`, `shell.spec.mjs: PASS` y `shell-acceptance.spec.mjs: PASS`. `npm run build` terminó correctamente con Next.js compilado y las rutas `/`, `/reportes` y `/_not-found` generadas. `npm run verify` terminó con `Verificación técnica: pass`.
+- **Pruebas manuales:** validé los cuatro estados, responsive y ausencia de desbordamiento en vista de iPhone 13 y iPad de 13 pulgadas; probé navegación, foco visible y controles con teclado. También realicé la prueba en desktop usando Safari y validé el comportamiento en Chrome.
+- **Limitación:** la prueba automatizada comprueba la estructura fuente y regresiones relevantes; la experiencia completa de responsive, lector de pantalla y contraste requiere validación manual. Los datos siguen siendo sintéticos y no hay API, persistencia, sincronización ni offline.
+- **Uso de IA:** utilicé un asistente de IA para revisar el alcance del issue, proponer la estructura de la prueba adicional y detectar riesgos de accesibilidad. Revisé los cambios, ejecuté las verificaciones y realicé personalmente las pruebas manuales.
+- **Commit final:** [`27c1b3a`](https://github.com/FernanRM7/PWA-AFK/commit/27c1b3a), `feat: complete app shell navigation and accessibility`.
+
+## Integrante: Jaime Arian Pablo Rosales — Manifest, metadata e iconos
+
+- **Mi contribución concreta y enlace:** creé `public/manifest.webmanifest` con los campos requeridos (name, short_name, description, start_url, scope, display, lang, background_color, theme_color), generé los iconos instalables `public/icons/icon-192.png` y `public/icons/icon-512.png` (PNG rasterizados reales a partir de `public/icon.svg`), actualicé `src/app/layout.tsx` para referenciar el manifest y el favicon vía `metadata`, y agregué la prueba `tests/manifest.spec.ts` con Vitest. Commit: [`8ec0cf8`](https://github.com/FernanRM7/PWA-AFK/commit/8ec0cf8).
+- **Decisión que puedo explicar y por qué:** usé `display: "standalone"` para que la app se sienta instalada sin la barra del navegador, y fijé `start_url` y `scope` en `/` porque toda la aplicación vive en la raíz. Separé el favicon SVG de la pestaña (`icon.svg`) de los iconos instalables del manifest (PNG), porque el manifest necesita formatos rasterizados y no acepta SVG en todos los navegadores. Para no tocar `tests/starter.spec.mjs`, agregué la prueba nueva como un archivo separado y encadené su ejecución en el script `test` de `package.json`.
+- **Comando o prueba proporcionada que ejecuté:** `npm install -D vitest`, `npm test` (corre `starter.spec.mjs` y `manifest.spec.ts`) y `npm run verify`.
+- **Resultado real que observé:** `starter.spec.mjs: PASS`; `manifest.spec.ts` con Vitest: 8/8 pruebas en verde ,  `npm run verify` terminó con `Verificación técnica: pass`, build de Next.js compiló correctamente (4 rutas estáticas generadas).
+- **Qué verifica esa prueba y qué no verifica:** confirma que el manifest es JSON válido con los campos y iconos requeridos, que los archivos de icono existen físicamente, y que el layout referencia bien el manifest y el favicon. No verifica el comportamiento real de instalación en un dispositivo, ni cómo se ve el ícono en distintas plataformas — eso necesita Service Worker  y pruebas manuales en un dispositivo.
+- **Limitación, dificultad o riesgo que identifiqué:** se verificó manualmente que la prueba falla correctamente al eliminar un campo requerido (se probó quitando `theme_color`, la prueba reportó `AssertionError: falta el campo "theme_color"` y volvió a pasar 8/8 al restaurarlo). El color `theme_color` es un valor provisional, ya que el equipo no ha definido una paleta visual oficial.
+- **Uso de IA:** utilicé un asistente de IA conversacional  para redactar la prueba de Vitest y decidir cómo encadenarla sin tocar `tests/starter.spec.mjs`. Yo definí el issue y su alcance, revisé y ejecuté cada comando personalmente, verifiqué manualmente las 4 rutas en el navegador y el código fuente del `<head>`, y decidí los valores finales del manifest.
 
 > No necesitan inventar un error ni escribir pruebas nuevas. Cada integrante debe reemplazar su sección, documentar resultados reales y explicar los límites de la prueba ejecutada.
