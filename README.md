@@ -52,28 +52,6 @@ Ejecuta comprobación de archivos, prueba proporcionada y build; genera `reports
 
 GitHub Actions ejecuta la misma verificación y permite descargar el artefacto `starter-week-01-evidence`. El reporte local se excluye de Git: adjúntenlo en Classroom o descarguen el del SHA entregado desde Actions.
 
-## Service Worker y verificación offline
-
-El Service Worker se encuentra en `public/sw.js` y se registra desde el cliente cuando se incorpora al shell. Usa cachés versionadas para el precache (`/` y `/manifest.webmanifest`) y para recursos `GET` públicos del mismo origen. Las solicitudes sensibles, autenticadas, con cookies o con `Cache-Control: no-store` no se guardan.
-
-La estrategia de navegación intenta red, respuesta runtime previamente guardada y finalmente la shell `/`. Si no existe ningún recurso disponible, devuelve `503`. Las versiones antiguas se eliminan únicamente en `activate`, después de comprobar que existe el precache actual; por eso un fallo de actualización no destruye una caché válida. Los detalles y límites están en `docs/cache-strategy.md`.
-
-Para verificar esta parte del proyecto:
-
-```bash
-npm run test:vitest -- tests/service-worker.spec.ts
-npm run test:vitest
-npm run verify
-make verify
-bash public-tests/check.sh
-```
-
-La prueba del Service Worker usa `Request`, `Response`, Cache API y red simuladas con datos sintéticos. Comprueba instalación, activación, limpieza controlada, runtime cache, fallback offline, exclusión de solicitudes sensibles, registro de errores y conservación de la caché anterior ante una actualización fallida. `npm run verify`, `make verify` y `bash public-tests/check.sh` cubren verificaciones más amplias del repositorio; no sustituyen una prueba manual en DevTools con el modo Offline.
-
-### Evidencia de CI
-
-La evidencia de CI debe conservarse desde la ejecución del workflow correspondiente: SHA probado, nombre del workflow, resultado de cada job y enlace al artefacto o a la ejecución. El reporte local `reports/verification.json` es temporal y permanece excluido de Git; no se debe inventar un resultado de CI ni confundirlo con la prueba local.
-
 ## Trabajo y entrega en equipo
 
 Inviten a los integrantes y al docente al mismo repositorio privado. Cada persona registra su evidencia en una sección de `evidence/individual.md`. Todos entregan en Classroom el mismo SHA final y enlaces, identificando su sección. El formato exacto está en `ACTIVIDAD-01.md`; no se requiere un pull request adicional ni una copia por alumno.
