@@ -90,3 +90,13 @@
 - **Rama documental:** `docs/evidence-week03`. Esta documentación se mantiene separada para integrarse posteriormente en `feat/service-worker` sin reemplazar las evidencias de los demás integrantes.
 
 > No necesitan inventar un error ni escribir pruebas nuevas. Cada integrante debe reemplazar su sección, documentar resultados reales y explicar los límites de la prueba ejecutada.
+
+## Integrante: Fernando Spencer Rodriguez Mendoza — Base, registro y actualización del Service Worker en Semana 3
+
+- **Contribución concreta y enlaces:** preparé el workflow de evaluación de Semana 3 en [`1b0475c`](https://github.com/FernanRM7/PWA-AFK/commit/1b0475c69c5121c48ffd5ef0577fd68f7f7075ba), integré el registro cliente del Service Worker en [`4d19324`](https://github.com/FernanRM7/PWA-AFK/commit/4d193248fa271314cdc1d348a9f01c89b56e5c8f), y agregué el control manual de actualización en [`b4caa46`](https://github.com/FernanRM7/PWA-AFK/commit/b4caa461940f3a91db9650edc6a5d8572750d213).
+- **Decisión técnica que puedo explicar:** el registro se ejecuta desde un componente cliente montado en el layout, verifica la disponibilidad de `navigator.serviceWorker`, comparte la promesa para evitar registros concurrentes y captura errores sin bloquear SSR ni la carga inicial. La actualización se expone mediante un botón visible en el encabezado y no recarga automáticamente para no interrumpir una inspección en curso.
+- **Pruebas ejecutadas y resultado:** ejecuté `make verify` y `npm run build`. La verificación terminó con `Verificación técnica: pass`; la suite reportó 25 pruebas exitosas y el build de Next.js terminó correctamente. GitHub Actions también reportó exitosos los checks del PR #23.
+- **Limitación identificada:** `updateServiceWorker()` solicita la actualización, pero no activa automáticamente un worker en espera ni recarga la página; aplicar una actualización completa requiere una decisión explícita posterior. La sincronización con backend y la persistencia de cambios offline quedan fuera de esta semana.
+- **Cambio que puedo defender o modificar en vivo:** puedo explicar y modificar el componente `ServiceWorkerUpdateControl`, sus estados accesibles (`comprobando`, `actualizado` y `error`) y la función de registro sin romper SSR.
+- **Uso declarado de IA:** utilicé un asistente de IA para organizar el desglose del issue, proponer la estructura del registro, revisar casos de prueba y detectar inconsistencias documentales. Revisé los cambios, ejecuté las verificaciones y validé personalmente los resultados antes de incorporarlos.
+- **SHA de referencia para la entrega:** el SHA final debe capturarse después del último commit de integración del equipo; esta sección conserva los SHAs de mis contribuciones.

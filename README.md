@@ -50,7 +50,7 @@ npm run build
 
 Ejecuta comprobación de archivos, prueba proporcionada y build; genera `reports/verification.json`. El reporte contiene resultados técnicos y documentos para revisión, no una calificación automática. `make verify` es equivalente. `bash public-tests/check.sh` es un check opcional de estructura.
 
-GitHub Actions ejecuta la misma verificación y permite descargar el artefacto `starter-week-01-evidence`. El reporte local se excluye de Git: adjúntenlo en Classroom o descarguen el del SHA entregado desde Actions.
+GitHub Actions ejecuta la verificación de Semana 3 y permite descargar el artefacto `academic-evidence-w03-service-worker-offline`. El reporte local se excluye de Git: adjúntenlo en Classroom o descarguen el del SHA entregado desde Actions.
 
 ## Service Worker y verificación offline
 
@@ -86,7 +86,7 @@ Inviten a los integrantes y al docente al mismo repositorio privado. Cada person
 - `evidence/`: evidencia propia de cada integrante.
 - `tests/`: prueba inicial proporcionada; no es una suite completa de comportamiento.
 
-Registren aquí sus supuestos y limitaciones de ejecución. El starter todavía no implementa instalación PWA, offline ni sincronización. No incluyan datos personales reales en el producto, archivos `.env` ni credenciales. La identificación de integrantes se conserva en el repositorio privado y Classroom.
+Registren aquí sus supuestos y limitaciones de ejecución. La PWA ya cuenta con registro de Service Worker, caché offline de la shell y pruebas deterministas; la sincronización con backend aún no está implementada. No incluyan datos personales reales en el producto, archivos `.env` ni credenciales. La identificación de integrantes se conserva en el repositorio privado y Classroom.
 
 ## Manifest e identidad instalable 
 
@@ -102,7 +102,7 @@ Registren aquí sus supuestos y limitaciones de ejecución. El starter todavía 
 - Se asume que la app seguirá viviendo en la raíz del dominio (`scope: "/"`), si más adelante se despliega bajo una subruta, habría que ajustar `scope` y `start_url`.
 
 **Límites:**
-- El manifest y los iconos hacen que el navegador pueda ofrecer instalar la app, pero esta semana no se implementa el Service Worker; sin él, la instalación real y el funcionamiento offline todavía no están garantizados.
+- El manifest, los iconos y el Service Worker permiten que el navegador ofrezca instalar la app y que la shell pueda funcionar offline después de una visita exitosa. La instalación y el comportamiento exacto pueden variar entre navegadores.
 - La prueba (`tests/manifest.spec.ts`, con Vitest) valida estructura, campos y existencia de archivos — no valida que el ícono se vea bien en cada plataforma, ni el comportamiento real de instalación en un dispositivo.
 
 **Verificación agregada:** `npm test` conserva `tests/starter.spec.mjs` y las pruebas JavaScript del shell, y después ejecuta las pruebas TypeScript con Vitest. `npm run verify` sigue funcionando igual.
