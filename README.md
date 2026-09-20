@@ -50,7 +50,50 @@ npm run build
 
 Ejecuta comprobación de archivos, prueba proporcionada y build; genera `reports/verification.json`. El reporte contiene resultados técnicos y documentos para revisión, no una calificación automática. `make verify` es equivalente. `bash public-tests/check.sh` es un check opcional de estructura.
 
-GitHub Actions ejecuta la misma verificación y permite descargar el artefacto `starter-week-01-evidence`. El reporte local se excluye de Git: adjúntenlo en Classroom o descarguen el del SHA entregado desde Actions.
+GitHub Actions ejecuta la verificación de Semana 3 y permite descargar el artefacto `academic-evidence-w03-service-worker-offline`. El reporte local se excluye de Git: adjúntenlo en Classroom o descarguen el del SHA entregado desde Actions.
+
+## Service Worker y verificación offline
+
+El Service Worker se encuentra en `public/sw.js` y se registra desde el cliente cuando se incorpora al shell. Usa cachés versionadas para el precache (`/` y `/manifest.webmanifest`) y para recursos `GET` públicos del mismo origen. Las solicitudes sensibles, autenticadas, con cookies o con `Cache-Control: no-store` no se guardan.
+
+La estrategia de navegación intenta red, respuesta runtime previamente guardada y finalmente la shell `/`. Si no existe ningún recurso disponible, devuelve `503`. Las versiones antiguas se eliminan únicamente en `activate`, después de comprobar que existe el precache actual; por eso un fallo de actualización no destruye una caché válida. Los detalles y límites están en `docs/cache-strategy.md`.
+
+Para verificar esta parte del proyecto:
+
+```bash
+npm run test:vitest -- tests/service-worker.spec.ts
+npm run test:vitest
+npm run verify
+make verify
+bash public-tests/check.sh
+```
+
+La prueba del Service Worker usa `Request`, `Response`, Cache API y red simuladas con datos sintéticos. Comprueba instalación, activación, limpieza controlada, runtime cache, fallback offline, exclusión de solicitudes sensibles, registro de errores y conservación de la caché anterior ante una actualización fallida. `npm run verify`, `make verify` y `bash public-tests/check.sh` cubren verificaciones más amplias del repositorio; no sustituyen una prueba manual en DevTools con el modo Offline.
+
+### Pruebas de comportamiento offline (`tests/offline.spec.ts`)
+
+Además de `tests/service-worker.spec.ts`, `tests/offline.spec.ts` cubre específicamente los siete casos mínimos de comportamiento offline y recuperación exigidos para esta semana:
+
+- Fallback cuando falla la red (navegación con caché runtime previa).
+- Respuesta servida desde caché sin ir a red.
+- Manejo de un recurso que no estaba precacheado (va a red y lo guarda).
+- Recuperación de datos frescos al regresar la conexión.
+- Conservación de una versión válida cuando una actualización falla.
+- Ausencia de datos sensibles en la caché (rutas `/api`, `/auth`, `/account`, cookies).
+- Idempotencia: instalar y activar el Service Worker varias veces no duplica ni corrompe el estado.
+
+Se ejecuta junto con el resto de la suite mediante `npm test` (Vitest recoge automáticamente cualquier archivo bajo `tests/**/*.spec.ts`). Usa el mismo patrón de simulación del Service Worker con `Request`/`Response`/Cache API en memoria, sin red real, sin servicios privados y sin pruebas no deterministas.     
+
+### Evidencia de CI
+
+La evidencia de CI debe conservarse desde la ejecución del workflow correspondiente: SHA probado, nombre del workflow, resultado de cada job y enlace al artefacto o a la ejecución. El reporte local `reports/verification.json` es temporal y permanece excluido de Git; no se debe inventar un resultado de CI ni confundirlo con la prueba local.
+
+**Ejemplo de evidencia registrada (Semana 3 — pruebas offline):**
+
+- SHA probado: `0c6356a`
+- Workflows ejecutados: `Academic Evaluation Feedback / evaluate` y `Starter Semana 1 — feedback / verify`, ambos en eventos `push` y `pull_request` (6/6 checks exitosos)
+- Resultado: todos los jobs en verde
+- Enlace a la ejecución: https://github.com/FernanRM7/PWA-AFK/actions/runs/35480354096/job/105996918955
 
 ## Trabajo y entrega en equipo
 
@@ -64,7 +107,7 @@ Inviten a los integrantes y al docente al mismo repositorio privado. Cada person
 - `evidence/`: evidencia propia de cada integrante.
 - `tests/`: prueba inicial proporcionada; no es una suite completa de comportamiento.
 
-Registren aquí sus supuestos y limitaciones de ejecución. El starter todavía no implementa instalación PWA, offline ni sincronización. No incluyan datos personales reales en el producto, archivos `.env` ni credenciales. La identificación de integrantes se conserva en el repositorio privado y Classroom.
+Registren aquí sus supuestos y limitaciones de ejecución. La PWA ya cuenta con registro de Service Worker, caché offline de la shell y pruebas deterministas; la sincronización con backend aún no está implementada. No incluyan datos personales reales en el producto, archivos `.env` ni credenciales. La identificación de integrantes se conserva en el repositorio privado y Classroom.
 
 ## Manifest e identidad instalable 
 
@@ -80,7 +123,7 @@ Registren aquí sus supuestos y limitaciones de ejecución. El starter todavía 
 - Se asume que la app seguirá viviendo en la raíz del dominio (`scope: "/"`), si más adelante se despliega bajo una subruta, habría que ajustar `scope` y `start_url`.
 
 **Límites:**
-- El manifest y los iconos hacen que el navegador pueda ofrecer instalar la app, pero esta semana no se implementa el Service Worker; sin él, la instalación real y el funcionamiento offline todavía no están garantizados.
+- El manifest, los iconos y el Service Worker permiten que el navegador ofrezca instalar la app y que la shell pueda funcionar offline después de una visita exitosa. La instalación y el comportamiento exacto pueden variar entre navegadores.
 - La prueba (`tests/manifest.spec.ts`, con Vitest) valida estructura, campos y existencia de archivos — no valida que el ícono se vea bien en cada plataforma, ni el comportamiento real de instalación en un dispositivo.
 
 **Verificación agregada:** `npm test` conserva `tests/starter.spec.mjs` y las pruebas JavaScript del shell, y después ejecuta las pruebas TypeScript con Vitest. `npm run verify` sigue funcionando igual.

@@ -48,6 +48,7 @@ import { Separator } from "@/components/ui/separator";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { TopbarStateCard } from "@/components/topbar-state-card";
+import { ServiceWorkerUpdateControl } from "@/components/pwa/service-worker-update-control";
 
 const press =
     "ease-[cubic-bezier(0.23,1,0.32,1)] transition-[scale,background-color] duration-150 active:scale-[0.96] motion-reduce:active:scale-100";
@@ -87,6 +88,7 @@ export function DashboardHeader({ title = 'Resumen' }: { readonly title?: string
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <TopbarStateCard />
+                    <ServiceWorkerUpdateControl />
                     <Separator
                         className="h-5! max-sm:hidden"
                         orientation="vertical"
