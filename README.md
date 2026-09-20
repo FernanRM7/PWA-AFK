@@ -70,9 +70,30 @@ bash public-tests/check.sh
 
 La prueba del Service Worker usa `Request`, `Response`, Cache API y red simuladas con datos sintéticos. Comprueba instalación, activación, limpieza controlada, runtime cache, fallback offline, exclusión de solicitudes sensibles, registro de errores y conservación de la caché anterior ante una actualización fallida. `npm run verify`, `make verify` y `bash public-tests/check.sh` cubren verificaciones más amplias del repositorio; no sustituyen una prueba manual en DevTools con el modo Offline.
 
+### Pruebas de comportamiento offline (`tests/offline.spec.ts`)
+
+Además de `tests/service-worker.spec.ts`, `tests/offline.spec.ts` cubre específicamente los siete casos mínimos de comportamiento offline y recuperación exigidos para esta semana:
+
+- Fallback cuando falla la red (navegación con caché runtime previa).
+- Respuesta servida desde caché sin ir a red.
+- Manejo de un recurso que no estaba precacheado (va a red y lo guarda).
+- Recuperación de datos frescos al regresar la conexión.
+- Conservación de una versión válida cuando una actualización falla.
+- Ausencia de datos sensibles en la caché (rutas `/api`, `/auth`, `/account`, cookies).
+- Idempotencia: instalar y activar el Service Worker varias veces no duplica ni corrompe el estado.
+
+Se ejecuta junto con el resto de la suite mediante `npm test` (Vitest recoge automáticamente cualquier archivo bajo `tests/**/*.spec.ts`). Usa el mismo patrón de simulación del Service Worker con `Request`/`Response`/Cache API en memoria, sin red real, sin servicios privados y sin pruebas no deterministas.     
+
 ### Evidencia de CI
 
 La evidencia de CI debe conservarse desde la ejecución del workflow correspondiente: SHA probado, nombre del workflow, resultado de cada job y enlace al artefacto o a la ejecución. El reporte local `reports/verification.json` es temporal y permanece excluido de Git; no se debe inventar un resultado de CI ni confundirlo con la prueba local.
+
+**Ejemplo de evidencia registrada (Semana 3 — pruebas offline):**
+
+- SHA probado: `0c6356a`
+- Workflows ejecutados: `Academic Evaluation Feedback / evaluate` y `Starter Semana 1 — feedback / verify`, ambos en eventos `push` y `pull_request` (6/6 checks exitosos)
+- Resultado: todos los jobs en verde
+- Enlace a la ejecución: https://github.com/FernanRM7/PWA-AFK/actions/runs/35480354096/job/105996918955
 
 ## Trabajo y entrega en equipo
 
