@@ -17,3 +17,16 @@ Las solicitudes `GET` del mismo origen usan red primero para documentos y caché
 No se guardan solicitudes que no sean `GET`, de otro origen, con `Authorization`, `Cookie` o `Cache-Control: no-store`, ni rutas sensibles como `/api`, `/auth`, `/profile`, `/users`, `/session` o `/token`. El precache contiene solo recursos públicos y datos sintéticos.
 
 Una actualización nunca borra cachés durante `install`. Por eso un fallo al descargar un recurso no puede destruir una versión válida; la eliminación de versiones anteriores queda reservada para un `activate` exitoso.
+
+## Límites y supuestos
+
+- El precache se limita a `/` y `/manifest.webmanifest`; se supone que la shell publicada en la raíz es el punto de entrada estable.
+- La estrategia solo conserva respuestas `GET` públicas del mismo origen. No implementa persistencia de formularios, cola de cambios, Background Sync ni sincronización con un servidor.
+- El fallback devuelve `503` cuando no hay una respuesta guardada. Esto permite que la aplicación o el navegador distingan una falta de contenido offline de una respuesta válida.
+- La actualización depende de que el navegador complete el ciclo `install` y `activate`; cambiar `CACHE_VERSION` sin publicar todos los recursos requeridos hace fallar la instalación, pero conserva la versión anterior.
+
+## Fallos conocidos y recuperación
+
+Una caída de red durante `install` o un error al descargar el manifiesto deja la versión anterior intacta, aunque el nuevo worker no se active. Si falla la apertura o escritura del runtime cache, se registra el error y la solicitud continúa por red. Si la red falla durante una navegación, se devuelve primero la respuesta cacheada, después la shell precacheada y finalmente `503`.
+
+Los mensajes de error se escriben en la consola con el prefijo `[sw]`. La estrategia no incluye reintentos automáticos ni sincronización diferida, porque esas capacidades pertenecen a una etapa posterior y podrían conservar datos de formularios que aquí están explícitamente fuera de alcance.
