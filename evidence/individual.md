@@ -112,3 +112,12 @@
 - **Cambio que puedo defender o modificar en vivo:** puedo explicar y modificar el componente `ServiceWorkerUpdateControl`, sus estados accesibles (`comprobando`, `actualizado` y `error`) y la función de registro sin romper SSR.
 - **Uso declarado de IA:** utilicé un asistente de IA para organizar el desglose del issue, proponer la estructura del registro, revisar casos de prueba y detectar inconsistencias documentales. Revisé los cambios, ejecuté las verificaciones y validé personalmente los resultados antes de incorporarlos.
 - **SHA de referencia para la entrega:** el SHA final debe capturarse después del último commit de integración del equipo; esta sección conserva los SHAs de mis contribuciones.
+
+## Semana 04 — Fernando Spencer Rodriguez Mendoza (borrador asistido; confirmar antes de Classroom)
+
+- **Contribución y SHA:** implementé con apoyo de Codex las rutas de listado CSR y detalle SSR, los estados de carga/error/404, el filtro sobre los datos sintéticos, la decisión técnica, el workflow y las pruebas. Commit de implementación: `5d9efe9e2d803ef75248bd14bd96ea118ae8ac8e`.
+- **Decisión técnica preparada para explicar:** el listado hace la transición carga→contenido/error en cliente y mantiene la búsqueda local; el detalle se marca `force-dynamic` para renderizar en el servidor por solicitud con el mismo dataset sintético.
+- **Verificación local observada:** `npm ci` PASS; `make verify` PASS (40 pruebas en 7 archivos, build exitoso). GitHub Actions aún no se ejecutó en el remoto. `bash public-tests/check.sh` PASS; ese check solo valida la estructura previa del starter.
+- **Medición y límite:** TTFB local del detalle (Node `v24.21.0`, Next `14.2.35`): 55.154, 10.147, 9.244, 7.938 y 5.319 ms; mediana 9.244 ms. Es una medición de una máquina y no representa Core Web Vitals ni una comparación general de rendimiento. La app sigue usando tres registros ficticios, sin API ni persistencia.
+- **Uso de IA y revisión humana:** se usó Codex (GPT-6) para implementar y revisar código, prueba y documentación. Resultados de comandos y medición reproducidos localmente. **Pendiente:** Fernando debe revisar el diff, confirmar que puede explicar la decisión y completar cualquier detalle personal antes de entregar.
+- **Entrega remota:** pendiente de que la integración GitHub tenga acceso a `FernanRM7/PWA-AFK`, crear los issues acordados y ejecutar Actions sobre el SHA final.
