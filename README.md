@@ -3,6 +3,33 @@
 
 Comiencen por `START_HERE.md` y lean `ACTIVIDAD-01.md`. Este es un proyecto acumulativo: un repositorio privado por equipo durante el curso. La Semana 1 consiste en arrancar, documentar y explicar la verificación; no en implementar toda la PWA.
 
+## Semana 04 — listado CSR y detalle SSR
+
+El incremento actual agrega `/inspecciones` como listado con renderizado en cliente y `/inspecciones/[id]` como detalle renderizado dinámicamente en servidor. Ambas rutas usan solamente los tres registros sintéticos de `src/lib/data/inspections.ts`. No hay backend, persistencia ni datos de laboratorios reales.
+
+Para ejecutar la actividad desde un checkout limpio:
+
+```bash
+npm ci
+npm run dev
+```
+
+Abre `http://localhost:3000/inspecciones` y entra al detalle desde un registro. Para revisar estados repetibles, usa `/inspecciones?estado=cargando`, `/inspecciones?estado=error` y `/inspecciones/inspection-001?estado=cargando` o `?estado=error`. El error del listado se recupera con el botón; el detalle vuelve a intentar mediante su frontera de error. Un id inexistente presenta el 404 de la ruta.
+
+La prueba de Semana 04 corre como parte de `npm test`. La verificación que se ejecuta antes de entregar es:
+
+```bash
+npm ci
+make verify
+npm run build
+```
+
+`make verify` equivale a `npm run verify`; comprueba la estructura existente, pruebas y build, y genera `reports/verification.json`. En Actions, el workflow `Academic Evaluation Feedback — Semana 04 CSR/SSR` publica ese reporte como artefacto. La tabla de [docs/rendering-decision.md](docs/rendering-decision.md) describe cómo repetir la medición local de TTFB y sus límites.
+
+**Verificación local registrada:** Node `v24.21.0`, npm `11.19.0`; `npm ci` terminó correctamente y `make verify` terminó con PASS (7 archivos de prueba, 38 pruebas y build exitoso). El build identifica `/inspecciones/[id]` como dinámico. La medición TTFB local de cinco respuestas tiene mediana de `9.244 ms`, con sus muestras y alcance descritos en la decisión técnica. La ejecución de GitHub Actions debe vincularse aquí al SHA final una vez que el workflow corra en el remoto.
+
+Cada integrante completa su propia sección en `evidence/individual.md` con su SHA, decisión, prueba y resultado observados, limitación y uso de IA declarado. El SHA final y el enlace a Actions se copian después del último commit; no se inventan resultados que no hayan sido ejecutados. La prueba de estructura de `bash public-tests/check.sh` sigue siendo la del starter previo; no es el evaluador de comportamiento de CSR/SSR.
+
 ## Entorno
 
 Node.js 20.19 o posterior compatible, npm 10 o posterior, Git y cuenta de GitHub. No se requiere Make. Registren aquí las versiones usadas (`node --version`, `npm --version`) y cualquier dificultad de entorno que encuentren.

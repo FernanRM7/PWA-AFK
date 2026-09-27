@@ -1,0 +1,33 @@
+name: Academic Evaluation Feedback — Semana 04 CSR/SSR
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Verify tests and build
+        run: make verify
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academic-evidence-w04-csr-ssr
+          if-no-files-found: ignore
+          path: reports/verification.json

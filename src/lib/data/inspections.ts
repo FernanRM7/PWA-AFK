@@ -44,3 +44,16 @@ export const inspections: Inspection[] = [
   }
 ];
 
+export function findInspectionById(id: string): Inspection | undefined {
+  return inspections.find((inspection) => inspection.id === id);
+}
+
+export function filterInspections(query: string): Inspection[] {
+  const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
+  if (!normalizedQuery) return inspections;
+
+  return inspections.filter((inspection) =>
+    [inspection.id, inspection.location, inspection.inspector, inspection.statusLabel]
+      .some((value) => value.toLocaleLowerCase("es-MX").includes(normalizedQuery)),
+  );
+}
