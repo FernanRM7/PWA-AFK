@@ -121,3 +121,12 @@
 - **Medición y límite:** TTFB local del detalle (Node `v24.21.0`, Next `14.2.35`): 55.154, 10.147, 9.244, 7.938 y 5.319 ms; mediana 9.244 ms. Es una medición de una máquina y no representa Core Web Vitals ni una comparación general de rendimiento. La app sigue usando tres registros ficticios, sin API ni persistencia.
 - **Uso de IA y revisión humana:** se usó Codex (GPT-6) para implementar y revisar código, prueba y documentación. Resultados de comandos y medición reproducidos localmente. **Pendiente:** Fernando debe revisar el diff, confirmar que puede explicar la decisión y completar cualquier detalle personal antes de entregar.
 - **Entrega remota:** pendiente de que la integración GitHub tenga acceso a `FernanRM7/PWA-AFK`, crear los issues acordados y ejecutar Actions sobre el SHA final.
+
+## Semana 04 — Kevin Rojas Martinez: prueba accesible de LoadingState
+
+- **Contribución:** añadí `tests/loading-state.spec.ts`, una prueba determinista del markup estático de `LoadingState` con Vitest y `renderToStaticMarkup`. No cambié rutas, configuración ni dependencias.
+- **Qué comprobé:** el estado de carga genera `role="status"`, `aria-busy="true"` y la clase `motion-reduce:animate-none`; el estado de error genera `role="alert"` y el botón `Reintentar`.
+- **SHA del commit del test:** [`8446793`](https://github.com/FernanRM7/PWA-AFK/commit/8446793b3d8898d4c716ee76f3a4d02a87c2a65f).
+- **Resultado real de `npm test`:** PASS; 8 archivos de prueba y 42 pruebas aprobadas. La ejecución incluyó los checks existentes del starter y del shell.
+- **Limitación:** `renderToStaticMarkup` verifica el HTML generado, pero no ejecuta el componente en un navegador; no comprueba que el botón reintente una operación real ni que el navegador aplique visualmente `prefers-reduced-motion`.
+- **Validación humana:** revisé el componente y el markup esperado, y ejecuté personalmente la prueba aislada y `npm test` para comprobar los resultados.
