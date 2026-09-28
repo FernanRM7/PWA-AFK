@@ -130,3 +130,12 @@
 - **Resultado real de `npm test`:** PASS; 8 archivos de prueba y 42 pruebas aprobadas. La ejecución incluyó los checks existentes del starter y del shell.
 - **Limitación:** `renderToStaticMarkup` verifica el HTML generado, pero no ejecuta el componente en un navegador; no comprueba que el botón reintente una operación real ni que el navegador aplique visualmente `prefers-reduced-motion`.
 - **Validación humana:** revisé el componente y el markup esperado, y ejecuté personalmente la prueba aislada y `npm test` para comprobar los resultados.
+
+## Semana 04 — Jaime Arian Pablo Rosales: regresión del enlace Inspecciones
+
+- **Contribución:** agregué aserciones a `tests/shell.spec.mjs` sobre el enlace "Inspecciones" de la navegación (`src/components/dashboard-01/dashboard-sidebar.tsx`). No cambié rutas CSR/SSR, componentes, configuración ni dependencias.
+- **Qué comprobé:** que la entrada `{ label: 'Inspecciones', href: '/inspecciones' }` existe en `navigation`, que `activeLabel` acepta `'Inspecciones'` y que el `<a>` conserva `aria-label={item.label}`, `href={item.href}` y `aria-current="page"` cuando está activo.
+- **SHA del commit de la prueba:** [`a24d902`](https://github.com/FernanRM7/PWA-AFK/commit/a24d902), en `feat/week-04-csr-ssr`.
+- **Resultado real de `npm test`:** PASS; `starter.spec.mjs`, `shell.spec.mjs` y `shell-acceptance.spec.mjs` en PASS, y Vitest con 8 archivos y 42 pruebas aprobadas. cambié temporalmente `/inspecciones` por `/inspeccion` en el sidebar: `node tests/shell.spec.mjs` falló con el mensaje el enlace "Inspecciones" debe existir en la navegación y apuntar a /inspecciones, y al restaurar la ruta volvió a PASS.
+- **Limitación:**  lee el código como texto y lo compara con expresiones regulares, sin renderizar el componente. No comprueba que el enlace se vea ni funcione en el navegador, ni que la ruta `/inspecciones` exista, y depende del formato exacto del código
+- **Uso de IA y validación humana:** usé ia para localizar dónde se define el enlace y redactar mejor esta sección. Yo revisé el código real del sidebar, ejecuté `npm test`, comprobé que la prueba falla al cambiar la ruta y pasa al restaurarla, y verifiqué con `git status` que solo cambió `tests/shell.spec.mjs`.
