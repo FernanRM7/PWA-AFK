@@ -8,6 +8,7 @@ import {
   ChevronDown,
   CircleHelp,
   CirclePlus,
+  ClipboardCheck,
   CreditCard,
   LayoutDashboard,
   Moon,
@@ -50,7 +51,7 @@ import {
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
-export function DashboardSidebar({ activeLabel = 'Resumen' }: { readonly activeLabel?: 'Resumen' | 'Reportes' }) {
+export function DashboardSidebar({ activeLabel = 'Resumen' }: { readonly activeLabel?: 'Resumen' | 'Reportes' | 'Inspecciones' }) {
   const { isMobile, setOpenMobile, state } = useSidebar();
   const [workspaces, setWorkspaces] = useState([
     'Lumen Labs',
@@ -333,5 +334,6 @@ export function DashboardSidebar({ activeLabel = 'Resumen' }: { readonly activeL
 
 const navigation = [
   { label: 'Resumen', href: '/', icon: LayoutDashboard },
+  { label: 'Inspecciones', href: '/inspecciones', icon: ClipboardCheck },
   { label: 'Reportes', href: '/reportes', icon: ChartNoAxesCombined },
 ];

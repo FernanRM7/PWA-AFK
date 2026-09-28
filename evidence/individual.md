@@ -112,3 +112,30 @@
 - **Cambio que puedo defender o modificar en vivo:** puedo explicar y modificar el componente `ServiceWorkerUpdateControl`, sus estados accesibles (`comprobando`, `actualizado` y `error`) y la función de registro sin romper SSR.
 - **Uso declarado de IA:** utilicé un asistente de IA para organizar el desglose del issue, proponer la estructura del registro, revisar casos de prueba y detectar inconsistencias documentales. Revisé los cambios, ejecuté las verificaciones y validé personalmente los resultados antes de incorporarlos.
 - **SHA de referencia para la entrega:** el SHA final debe capturarse después del último commit de integración del equipo; esta sección conserva los SHAs de mis contribuciones.
+
+## Semana 04 — Fernando Spencer Rodriguez Mendoza
+
+- **Contribución y SHA:** implementé el listado CSR y el detalle SSR, los estados de carga/error/404/reintento, el filtrado sobre datos sintéticos, la decisión técnica, el workflow y la suite de renderizado. Commits principales: [`5d9efe9`](https://github.com/FernanRM7/PWA-AFK/commit/5d9efe9e2d803ef75248bd14bd96ea118ae8ac8e) (implementación) y [`afb6034`](https://github.com/FernanRM7/PWA-AFK/commit/afb60348aba3dc8b71bd1fe3ddb540714133e602) (documentación/evidencia). La rama compartida incluye además las pruebas y evidencias individuales de Jaime y Kevin; HEAD verificado: [`2901818`](https://github.com/FernanRM7/PWA-AFK/commit/2901818579724fd30f99ca7d69595424a57ec247).
+- **Decisión técnica que puedo explicar:** el listado es cliente para permitir búsqueda local interactiva y muestra carga inicial; el detalle es dinámico (`force-dynamic`) para renderizar cada registro en servidor. Ambas rutas usan el mismo conjunto pequeño de datos ficticios y fallbacks explícitos, sin API ni persistencia.
+- **Verificación local ejecutada en HEAD `2901818`:** `npm ci` terminó correctamente y `make verify` terminó con `Verificación técnica: pass`: pruebas de Node PASS, 8 archivos de Vitest y 42 pruebas PASS, build Next.js PASS. El build identifica `/inspecciones/[id]` como dinámico y `/inspecciones` como estático con hidratación de cliente.
+- **Verificación remota:** los checks del PR [#30](https://github.com/FernanRM7/PWA-AFK/pull/30) para el SHA `2901818579724fd30f99ca7d69595424a57ec247` terminaron todos en SUCCESS, incluidos `Academic Evaluation Feedback — Semana 04 CSR/SSR` y `Starter Semana 1 — feedback` (push y pull request). [Ejecución de Actions](https://github.com/FernanRM7/PWA-AFK/actions/runs/36366309925).
+- **Medición y limitación:** la decisión registra una medición local de TTFB del detalle (Node `v24.21.0`, Next `14.2.35`): 55.154, 10.147, 9.244, 7.938 y 5.319 ms; mediana 9.244 ms. Son cinco muestras de una sola máquina, no Core Web Vitals ni evidencia de rendimiento general. Las pruebas de render estático no sustituyen una validación completa en navegadores; el proyecto conserva tres registros sintéticos y no implementa API ni persistencia.
+- **Uso declarado de IA y validación humana:** utilicé Codex (GPT-6) para apoyar implementación, revisión de pruebas y documentación. Revisé los componentes, datos, tests, decisiones y resultados, y ejecuté personalmente `npm ci` y `make verify`; no presento como éxito ningún comando no ejecutado.
+
+## Semana 04 — Kevin Rojas Martinez: prueba accesible de LoadingState
+
+- **Contribución:** añadí `tests/loading-state.spec.ts`, una prueba determinista del markup estático de `LoadingState` con Vitest y `renderToStaticMarkup`. No cambié rutas, configuración ni dependencias.
+- **Qué comprobé:** el estado de carga genera `role="status"`, `aria-busy="true"` y la clase `motion-reduce:animate-none`; el estado de error genera `role="alert"` y el botón `Reintentar`.
+- **SHA del commit del test:** [`8446793`](https://github.com/FernanRM7/PWA-AFK/commit/8446793b3d8898d4c716ee76f3a4d02a87c2a65f).
+- **Resultado real de `npm test`:** PASS; 8 archivos de prueba y 42 pruebas aprobadas. La ejecución incluyó los checks existentes del starter y del shell.
+- **Limitación:** `renderToStaticMarkup` verifica el HTML generado, pero no ejecuta el componente en un navegador; no comprueba que el botón reintente una operación real ni que el navegador aplique visualmente `prefers-reduced-motion`.
+- **Validación humana:** revisé el componente y el markup esperado, y ejecuté personalmente la prueba aislada y `npm test` para comprobar los resultados.
+
+## Semana 04 — Jaime Arian Pablo Rosales: regresión del enlace Inspecciones
+
+- **Contribución:** agregué aserciones a `tests/shell.spec.mjs` sobre el enlace "Inspecciones" de la navegación (`src/components/dashboard-01/dashboard-sidebar.tsx`). No cambié rutas CSR/SSR, componentes, configuración ni dependencias.
+- **Qué comprobé:** que la entrada `{ label: 'Inspecciones', href: '/inspecciones' }` existe en `navigation`, que `activeLabel` acepta `'Inspecciones'` y que el `<a>` conserva `aria-label={item.label}`, `href={item.href}` y `aria-current="page"` cuando está activo.
+- **SHA del commit de la prueba:** [`a24d902`](https://github.com/FernanRM7/PWA-AFK/commit/a24d902), en `feat/week-04-csr-ssr`.
+- **Resultado real de `npm test`:** PASS; `starter.spec.mjs`, `shell.spec.mjs` y `shell-acceptance.spec.mjs` en PASS, y Vitest con 8 archivos y 42 pruebas aprobadas. cambié temporalmente `/inspecciones` por `/inspeccion` en el sidebar: `node tests/shell.spec.mjs` falló con el mensaje el enlace "Inspecciones" debe existir en la navegación y apuntar a /inspecciones, y al restaurar la ruta volvió a PASS.
+- **Limitación:**  lee el código como texto y lo compara con expresiones regulares, sin renderizar el componente. No comprueba que el enlace se vea ni funcione en el navegador, ni que la ruta `/inspecciones` exista, y depende del formato exacto del código
+- **Uso de IA y validación humana:** usé ia para localizar dónde se define el enlace y redactar mejor esta sección. Yo revisé el código real del sidebar, ejecuté `npm test`, comprobé que la prueba falla al cambiar la ruta y pasa al restaurarla, y verifiqué con `git status` que solo cambió `tests/shell.spec.mjs`.
