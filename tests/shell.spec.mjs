@@ -20,4 +20,23 @@ assert.match(sidebar, /Resumen/);
 assert.match(sidebar, /Reportes/);
 assert.doesNotMatch(sidebar, /Customers|Transactions|Payouts/);
 
+// regresión 
+assert.match(
+  sidebar,
+  /\{\s*label:\s*['"]Inspecciones['"],\s*href:\s*['"]\/inspecciones['"]/,
+  'el enlace "Inspecciones" debe existir en la navegación y apuntar a /inspecciones',
+);
+assert.match(
+  sidebar,
+  /activeLabel\?:\s*'Resumen'\s*\|\s*'Reportes'\s*\|\s*'Inspecciones'/,
+  'activeLabel debe aceptar "Inspecciones" como estado activo',
+);
+assert.match(sidebar, /aria-label=\{item\.label\}/, 'el enlace debe conservar su etiqueta accesible');
+assert.match(sidebar, /href=\{item\.href\}/, 'el enlace debe usar el destino definido en la navegación');
+assert.match(
+  sidebar,
+  /aria-current=\{item\.label === activeLabel \? "page" : undefined\}/,
+  'el enlace activo debe marcarse con aria-current="page"',
+);
+
 console.log("shell.spec.mjs: PASS");
