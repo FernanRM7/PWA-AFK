@@ -180,3 +180,27 @@ La suite TypeScript valida el manifest, sus iconos, la metadata del layout y la 
 | Icono SVG | Abrir `http://localhost:3000/icon.svg` y revisar el favicon de la pestaña. | El SVG carga y `metadata.icons` lo referencia como favicon. | Cumplido: `public/icon.svg` carga y el layout referencia `/icon.svg`. |
 
 **Supuestos y límites:** la comprobación manual usa datos sintéticos y un servidor local; no prueba instalación en todos los navegadores, lector de pantalla, persistencia, API, sincronización ni offline. `npm ci` puede informar vulnerabilidades transitivas; no se ejecuta `npm audit fix` porque cambiaría dependencias fuera del alcance.
+
+## Persistencia local y captura offline (Semana 5)
+
+Se agregó un contrato de almacenamiento local para guardar inspecciones sintéticas capturadas por el usuario, sin depender de red ni servidor:
+
+- `src/lib/storage/schema.ts`: define el esquema versionado (`VERSION_ESQUEMA`) y `validarBorradorInspeccion`, que valida los datos antes de guardarlos y devuelve errores explícitos en vez de lanzar excepciones
+- `src/lib/storage/inspection-store.ts`: adaptador sobre IndexedDB que abre la base de datos `afk-inspections-db`, guarda solo datos ya validados y cierra la conexión después de cada operación.
+- `/inspecciones` ahora incluye un formulario de Captura rápida debajo del listado que guarda localmente y muestra los registros guardados en este dispositivo.
+
+**Decisiones:**
+- Cada registro guardado incluye su propio `schemaVersion`, no solo la base de datos en general, para poder identificar registros de versiones anteriores si el esquema cambia más adelante.
+- La validación nunca lanza excepciones, para que la interfaz pueda mostrar los errores de forma accesible sin depender de `try/catch`.
+- `guardarInspeccion` usa `store.add()` en vez de `put()`, para no sobrescribir silenciosamente un registro existente.
+- El adaptador cierra la conexión a la base de datos después de cada operación, en vez de mantenerla abierta indefinidamente
+
+**Supuestos:**
+- Los datos capturados siguen siendo sintéticos, igual que el resto del proyecto, el formulario no está pensado para datos reales de laboratorios.
+- Se asume un solo "object store" (`inspections`) por ahora; si se agregan más tipos de datos offline en semanas futuras, habría que evaluar si conviene un store adicional o una migración de esquema
+
+**Límites:**
+- El formulario guarda localmente, pero esta semana no implementa sincronización con un servidor
+- Las pruebas (`tests/storage.spec.ts`, con Vitest y `fake-indexeddb`) validan el comportamiento del esquema y del adaptador de forma aislada no prueban el formulario renderizado en un navegador real, ni el comportamiento de IndexedDB en todos los navegadores soportados
+
+**Verificación:** `npm test` incluye ahora `tests/storage.spec.ts` 10 pruebas: validación, escritura, lectura y recuperación tras simular un reinicio de la aplicación `npm run verify` compila correctamente con la nueva ruta de captura.
