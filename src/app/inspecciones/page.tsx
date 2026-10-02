@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { LoadingState } from "@/components/loading-state";
 import { filterInspections } from "@/lib/data/inspections";
+import { guardarInspeccion, obtenerTodasLasInspecciones } from "@/lib/storage/inspection-store";
+import type { InspeccionGuardada } from "@/lib/storage/schema";
 
 type ListState = "loading" | "error" | "success";
 
@@ -10,6 +12,47 @@ export default function InspectionsPage() {
   const [state, setState] = useState<ListState>("loading");
   const [query, setQuery] = useState("");
   const visibleInspections = useMemo(() => filterInspections(query), [query]);
+
+  const [inspeccionesGuardadas, setInspeccionesGuardadas] = useState<InspeccionGuardada[]>([]);
+  const [formulario, setFormulario] = useState({
+    location: "",
+    date: "",
+    inspector: "",
+    status: "ok" as "ok" | "attention",
+    findings: "0",
+    summary: "",
+  });
+  const [erroresFormulario, setErroresFormulario] = useState<string[]>([]);
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    obtenerTodasLasInspecciones().then(setInspeccionesGuardadas);
+  }, []);
+
+  async function manejarEnvioFormulario(evento: React.FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    setGuardando(true);
+    setErroresFormulario([]);
+
+    const resultado = await guardarInspeccion({
+      location: formulario.location,
+      date: formulario.date,
+      inspector: formulario.inspector,
+      status: formulario.status,
+      findings: Number(formulario.findings),
+      summary: formulario.summary,
+    });
+
+    setGuardando(false);
+
+    if (!resultado.ok) {
+      setErroresFormulario(resultado.errors);
+      return;
+    }
+
+    setInspeccionesGuardadas((actuales) => [resultado.inspection, ...actuales]);
+    setFormulario({ location: "", date: "", inspector: "", status: "ok", findings: "0", summary: "" });
+  }
 
   useEffect(() => {
     const requestedState = new URLSearchParams(window.location.search).get("estado");
@@ -91,6 +134,116 @@ export default function InspectionsPage() {
           )}
         </section>
       )}
+      <section aria-labelledby="capture-heading" className="space-y-4 border-t pt-6">
+        <div>
+          <h2 className="font-semibold" id="capture-heading">Captura rápida (sintética)</h2>
+          <p className="text-sm text-muted-foreground">Funciona sin conexión: se guarda en este dispositivo.</p>
+        </div>
+
+        <form className="grid gap-3 sm:grid-cols-2" onSubmit={manejarEnvioFormulario}>
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="capture-location">Laboratorio</label>
+            <input
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              id="capture-location"
+              onChange={(e) => setFormulario((f) => ({ ...f, location: e.target.value }))}
+              type="text"
+              value={formulario.location}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="capture-date">Fecha</label>
+            <input
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              id="capture-date"
+              onChange={(e) => setFormulario((f) => ({ ...f, date: e.target.value }))}
+              type="date"
+              value={formulario.date}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="capture-inspector">Inspector</label>
+            <input
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              id="capture-inspector"
+              onChange={(e) => setFormulario((f) => ({ ...f, inspector: e.target.value }))}
+              type="text"
+              value={formulario.inspector}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="capture-status">Estado</label>
+            <select
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              id="capture-status"
+              onChange={(e) => setFormulario((f) => ({ ...f, status: e.target.value as "ok" | "attention" }))}
+              value={formulario.status}
+            >
+              <option value="ok">Sin incidencias</option>
+              <option value="attention">Requiere atención</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="capture-findings">Hallazgos</label>
+            <input
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              id="capture-findings"
+              min={0}
+              onChange={(e) => setFormulario((f) => ({ ...f, findings: e.target.value }))}
+              type="number"
+              value={formulario.findings}
+            />
+          </div>
+
+          <div className="space-y-1 sm:col-span-2">
+            <label className="text-sm font-medium" htmlFor="capture-summary">Resumen</label>
+            <input
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              id="capture-summary"
+              onChange={(e) => setFormulario((f) => ({ ...f, summary: e.target.value }))}
+              type="text"
+              value={formulario.summary}
+            />
+          </div>
+
+          {erroresFormulario.length > 0 && (
+            <div aria-live="assertive" className="sm:col-span-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+              <ul className="list-disc space-y-1 pl-4">
+                {erroresFormulario.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <button
+            className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground sm:col-span-2 sm:w-fit"
+            disabled={guardando}
+            type="submit"
+          >
+            {guardando ? "Guardando..." : "Guardar inspección"}
+          </button>
+        </form>
+
+        {inspeccionesGuardadas.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold">Guardadas en este dispositivo ({inspeccionesGuardadas.length})</h3>
+            <ul className="grid gap-2 sm:grid-cols-2" data-testid="stored-inspections">
+              {inspeccionesGuardadas.map((inspeccion) => (
+                <li className="rounded-lg border bg-card p-3 text-sm" data-inspection-id={inspeccion.id} key={inspeccion.id}>
+                  <p className="font-medium">{inspeccion.location}</p>
+                  <p className="text-muted-foreground">{inspeccion.date} · {inspeccion.inspector}</p>
+                  <p className="text-muted-foreground">{inspeccion.summary}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
