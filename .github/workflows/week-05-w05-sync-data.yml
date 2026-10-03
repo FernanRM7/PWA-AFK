@@ -21,22 +21,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm ci --ignore-scripts --no-audit --no-fund
-      - name: AC-01 - Instalación limpia y build completan.
+            npm ci --no-audit --no-fund
+          - name: AC-01 - La aplicación compila.
         shell: bash
         run: |
           set -euo pipefail
-          test -f package.json && (test -f package-lock.json || test -f pnpm-lock.yaml || test -f yarn.lock) && npm run build --if-present
-      - name: AC-02 - Los artefactos declarados para la actividad existen.
+            npm run build
+          - name: AC-02 - La cola persistente y sus pruebas existen.
         shell: bash
         run: |
           set -euo pipefail
-          test -e 'src/lib/sync/queue.ts' && test -e 'src/lib/storage/schema.ts' && test -e 'src/lib/sync/conflict-policy.ts' && test -e 'docs/sync-policy.md' && test -e 'tests/sync.spec.ts'
-      - name: AC-03 - Existe una suite ejecutable de pruebas.
+            test -e 'src/lib/sync/queue.ts' && test -e 'src/lib/storage/schema.ts' && test -e 'tests/queue.spec.ts'
+          - name: AC-03 - Las pruebas pasan.
         shell: bash
         run: |
           set -euo pipefail
-          test -d tests && find tests -type f -print -quit | grep -q . && npm run test --if-present -- --run
+          npm test
       - name: Upload evaluation artifacts
         if: always()
         uses: actions/upload-artifact@v4
