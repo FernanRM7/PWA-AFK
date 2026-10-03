@@ -1,4 +1,4 @@
-import { NOMBRE_BASE_DE_DATOS, VERSION_ESQUEMA, NOMBRE_ALMACEN, InspeccionGuardada, validarBorradorInspeccion } from "./schema";
+import { NOMBRE_BASE_DE_DATOS, VERSION_ESQUEMA, NOMBRE_ALMACEN, EstadoColaSincronizacion, InspeccionGuardada, validarBorradorInspeccion } from "./schema";
 
 function abrirBaseDeDatos(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
@@ -33,11 +33,17 @@ export async function guardarInspeccion(borrador: unknown): Promise<ResultadoGua
         return { ok: false, errors: validacion.errores };
     }
 
+    const id = crypto.randomUUID();
     const inspeccion: InspeccionGuardada = {
         ...validacion.valor,
-        id: crypto.randomUUID(),
+        id,
         createdAt: generarMarcaDeTiempo(),
         schemaVersion: VERSION_ESQUEMA,
+        sync: {
+            idempotencyKey: `inspection:${id}`,
+            status: "pending",
+            attempts: 0,
+        },
     };
 
     let db: IDBDatabase;
@@ -85,6 +91,42 @@ export async function obtenerTodasLasInspecciones(): Promise<InspeccionGuardada[
         solicitud.onerror = () => {
             db.close();
             resolve([]);
+        };
+    });
+}
+
+export async function actualizarEstadoSincronizacion(
+    id: string,
+    sync: EstadoColaSincronizacion,
+): Promise<void> {
+    const db = await abrirBaseDeDatos();
+
+    return new Promise((resolve, reject) => {
+        const transaccion = db.transaction(NOMBRE_ALMACEN, "readwrite");
+        const almacen = transaccion.objectStore(NOMBRE_ALMACEN);
+        const lectura = almacen.get(id);
+
+        lectura.onsuccess = () => {
+            const inspeccion = lectura.result as InspeccionGuardada | undefined;
+            if (!inspeccion) {
+                db.close();
+                reject(new Error(`No existe la inspección ${id}.`));
+                return;
+            }
+
+            const escritura = almacen.put({ ...inspeccion, sync });
+            escritura.onsuccess = () => {
+                db.close();
+                resolve();
+            };
+            escritura.onerror = () => {
+                db.close();
+                reject(escritura.error ?? new Error("No se pudo actualizar el estado de sincronización."));
+            };
+        };
+        lectura.onerror = () => {
+            db.close();
+            reject(lectura.error ?? new Error("No se pudo leer la inspección para sincronizar."));
         };
     });
 }

@@ -4,6 +4,15 @@ export const NOMBRE_BASE_DE_DATOS = "afk-inspections-db";
 
 export type EstadoInspeccionGuardada = "ok" | "attention";
 
+export type EstadoSincronizacion = "pending" | "syncing" | "failed" | "synced";
+
+export type EstadoColaSincronizacion = {
+    idempotencyKey: string;
+    status: EstadoSincronizacion;
+    attempts: number;
+    lastError?: string;
+};
+
 export type InspeccionGuardada = {
     id: string;
     location: string;
@@ -14,6 +23,7 @@ export type InspeccionGuardada = {
     summary: string;
     createdAt: string;
     schemaVersion: number;
+    sync: EstadoColaSincronizacion;
 };
 
 export type BorradorInspeccion = {
