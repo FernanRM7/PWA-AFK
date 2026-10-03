@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { LoadingState } from "@/components/loading-state";
 import { filterInspections } from "@/lib/data/inspections";
 import { guardarInspeccion, obtenerTodasLasInspecciones } from "@/lib/storage/inspection-store";
+import {
+  enqueueInspectionForSync,
+  getSyncQueueSummary,
+  resumeQueueOnOnline,
+  retryFailedSync,
+  syncPendingInspections,
+} from "@/lib/sync/queue";
+import type { SyncQueueSummary } from "@/lib/sync/queue";
 import type { InspeccionGuardada } from "@/lib/storage/schema";
 
 type ListState = "loading" | "error" | "success";
@@ -24,10 +32,53 @@ export default function InspectionsPage() {
   });
   const [erroresFormulario, setErroresFormulario] = useState<string[]>([]);
   const [guardando, setGuardando] = useState(false);
+  const [syncSummary, setSyncSummary] = useState<SyncQueueSummary>({ pending: 0, syncing: 0, failed: 0, synced: 0 });
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncError, setSyncError] = useState("");
 
   useEffect(() => {
     obtenerTodasLasInspecciones().then(setInspeccionesGuardadas);
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function resumeSync() {
+      setSyncBusy(true);
+      setSyncError("");
+      try {
+        setSyncSummary(await syncPendingInspections());
+      } catch {
+        setSyncError("No se pudo actualizar la cola de sincronización.");
+      } finally {
+        if (mounted) setSyncBusy(false);
+      }
+    }
+
+    getSyncQueueSummary().then((summary) => {
+      if (mounted) setSyncSummary(summary);
+    });
+
+    const detachOnlineListener = resumeQueueOnOnline(window, resumeSync);
+    if (navigator.onLine) void resumeSync();
+
+    return () => {
+      mounted = false;
+      detachOnlineListener();
+    };
+  }, []);
+
+  async function manejarReintentoManual() {
+    setSyncBusy(true);
+    setSyncError("");
+    try {
+      setSyncSummary(await retryFailedSync());
+    } catch {
+      setSyncError("No se pudo reintentar la sincronización.");
+    } finally {
+      setSyncBusy(false);
+    }
+  }
 
   async function manejarEnvioFormulario(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -52,6 +103,19 @@ export default function InspectionsPage() {
 
     setInspeccionesGuardadas((actuales) => [resultado.inspection, ...actuales]);
     setFormulario({ location: "", date: "", inspector: "", status: "ok", findings: "0", summary: "" });
+    try {
+      await enqueueInspectionForSync(resultado.inspection);
+      if (navigator.onLine) {
+        setSyncBusy(true);
+        setSyncSummary(await syncPendingInspections());
+      } else {
+        setSyncSummary(await getSyncQueueSummary());
+      }
+    } catch {
+      setSyncError("La inspección quedó guardada, pero no se pudo actualizar la sincronización.");
+    } finally {
+      setSyncBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -139,6 +203,29 @@ export default function InspectionsPage() {
           <h2 className="font-semibold" id="capture-heading">Captura rápida (sintética)</h2>
           <p className="text-sm text-muted-foreground">Funciona sin conexión: se guarda en este dispositivo.</p>
         </div>
+
+        <div aria-live="polite" className="space-y-2 text-sm" role="status">
+          <p>
+            {syncBusy
+              ? "Sincronizando inspecciones guardadas…"
+              : syncSummary.failed > 0
+                ? `${syncSummary.failed} inspecciones agotaron los intentos automáticos.`
+                : syncSummary.pending > 0
+                  ? `${syncSummary.pending} inspecciones pendientes; se reanudarán al recuperar conexión.`
+                  : `Estado de sincronización: ${syncSummary.synced} inspecciones completadas.`}
+          </p>
+          {syncSummary.failed > 0 && (
+            <button
+              className="min-h-10 rounded-md border px-3 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+              disabled={syncBusy}
+              onClick={manejarReintentoManual}
+              type="button"
+            >
+              Reintentar sincronización
+            </button>
+          )}
+        </div>
+        {syncError && <p className="text-sm text-destructive" role="alert">{syncError}</p>}
 
         <form className="grid gap-3 sm:grid-cols-2" onSubmit={manejarEnvioFormulario}>
           <div className="space-y-1">
