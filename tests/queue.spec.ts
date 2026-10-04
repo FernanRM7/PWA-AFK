@@ -12,7 +12,8 @@ function syntheticInspection(id = "inspection-synthetic-001"): InspeccionGuardad
         findings: 0,
         summary: "Registro sintético para probar sincronización.",
         createdAt: "2026-10-02T10:00:00.000Z#000001",
-        schemaVersion: 1,
+        updatedAt: "2026-10-02T10:00:00.000Z",
+        schemaVersion: 2,
         sync: { idempotencyKey: `inspection:${id}`, status: "pending", attempts: 0 },
     };
 }
@@ -26,6 +27,9 @@ function createMemoryStorage(initial: InspeccionGuardada[] = []) {
             const inspection = records.get(id);
             if (!inspection) throw new Error(`Missing synthetic inspection: ${id}`);
             records.set(id, { ...inspection, sync: structuredClone(sync) });
+        }),
+        replace: vi.fn(async (inspection: InspeccionGuardada) => {
+            records.set(inspection.id, structuredClone(inspection));
         }),
     };
 }

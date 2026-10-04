@@ -70,7 +70,7 @@ describe("guardarInspeccion y obtenerTodasLasInspecciones", () => {
         expect(todas).toHaveLength(1);
         expect(todas[0].location).toBe("Laboratorio de Química");
         expect(todas[0].id).toBeTruthy();
-        expect(todas[0].schemaVersion).toBe(1);
+        expect(todas[0].schemaVersion).toBe(2);
     });
 
     it("no guarda una inspección inválida y devuelve los errores", async () => {

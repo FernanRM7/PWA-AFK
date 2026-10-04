@@ -4,10 +4,36 @@ function abrirBaseDeDatos(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const solicitud = indexedDB.open(NOMBRE_BASE_DE_DATOS, VERSION_ESQUEMA);
 
-        solicitud.onupgradeneeded = () => {
+        solicitud.onupgradeneeded = (event) => {
             const db = solicitud.result;
             if (!db.objectStoreNames.contains(NOMBRE_ALMACEN)) {
                 db.createObjectStore(NOMBRE_ALMACEN, { keyPath: "id" });
+            }
+
+            if ((event as IDBVersionChangeEvent).oldVersion < 2) {
+                const almacen = solicitud.transaction?.objectStore(NOMBRE_ALMACEN);
+                const cursorSolicitud = almacen?.openCursor();
+                if (cursorSolicitud) {
+                    cursorSolicitud.onsuccess = () => {
+                        const cursor = cursorSolicitud.result;
+                        if (!cursor) return;
+
+                        const registro = cursor.value as Partial<InspeccionGuardada>;
+                        const marcaLegacy = registro.createdAt?.split("#", 1)[0];
+                        const updatedAt = registro.updatedAt ?? (
+                            marcaLegacy && Number.isFinite(Date.parse(marcaLegacy))
+                                ? new Date(marcaLegacy).toISOString()
+                                : new Date(0).toISOString()
+                        );
+
+                        cursor.update({
+                            ...registro,
+                            updatedAt,
+                            schemaVersion: VERSION_ESQUEMA,
+                        });
+                        cursor.continue();
+                    };
+                }
             }
         };
 
@@ -38,6 +64,7 @@ export async function guardarInspeccion(borrador: unknown): Promise<ResultadoGua
         ...validacion.valor,
         id,
         createdAt: generarMarcaDeTiempo(),
+        updatedAt: new Date().toISOString(),
         schemaVersion: VERSION_ESQUEMA,
         sync: {
             idempotencyKey: `inspection:${id}`,
@@ -128,5 +155,28 @@ export async function actualizarEstadoSincronizacion(
             db.close();
             reject(lectura.error ?? new Error("No se pudo leer la inspección para sincronizar."));
         };
+    });
+}
+
+/** Reemplaza el registro local con la versión elegida por la política de conflicto. */
+export async function reemplazarInspeccion(inspeccion: InspeccionGuardada): Promise<void> {
+    const db = await abrirBaseDeDatos();
+
+    return new Promise((resolve, reject) => {
+        const transaccion = db.transaction(NOMBRE_ALMACEN, "readwrite");
+        transaccion.oncomplete = () => {
+            db.close();
+            resolve();
+        };
+        transaccion.onerror = () => {
+            db.close();
+            reject(transaccion.error ?? new Error("No se pudo guardar la versión resuelta."));
+        };
+        transaccion.onabort = () => {
+            db.close();
+            reject(transaccion.error ?? new Error("Se canceló el guardado de la versión resuelta."));
+        };
+
+        transaccion.objectStore(NOMBRE_ALMACEN).put(inspeccion);
     });
 }

@@ -1,16 +1,24 @@
 import {
     actualizarEstadoSincronizacion,
     obtenerTodasLasInspecciones,
+    reemplazarInspeccion,
 } from "@/lib/storage/inspection-store";
 import type {
     EstadoColaSincronizacion,
     InspeccionGuardada,
 } from "@/lib/storage/schema";
+import { resolveInspectionConflict } from "@/lib/sync/conflict-policy";
 
 export const MAX_SYNC_ATTEMPTS = 5;
 const BACKOFF_DELAYS_MS = [1_000, 2_000, 4_000, 8_000];
 
-export type SyncAcknowledgement = { idempotencyKey: string };
+export type SyncAcknowledgement =
+    | { idempotencyKey: string; outcome?: "accepted" }
+    | {
+        idempotencyKey: string;
+        outcome: "conflict";
+        remoteInspection: InspeccionGuardada;
+    };
 export type SyncTransport = (
     inspection: InspeccionGuardada,
     idempotencyKey: string,
@@ -19,6 +27,7 @@ export type SyncTransport = (
 export type SyncQueueStorage = {
     list: () => Promise<InspeccionGuardada[]>;
     update: (id: string, state: EstadoColaSincronizacion) => Promise<void>;
+    replace: (inspection: InspeccionGuardada) => Promise<void>;
 };
 
 export type SyncQueueSummary = {
@@ -37,10 +46,12 @@ type SyncQueueOptions = {
 const storageAdapter: SyncQueueStorage = {
     list: obtenerTodasLasInspecciones,
     update: actualizarEstadoSincronizacion,
+    replace: reemplazarInspeccion,
 };
 
 export const syntheticSyncTransport: SyncTransport = async (_inspection, idempotencyKey) => ({
     idempotencyKey,
+    outcome: "accepted",
 });
 
 function defaultWait(milliseconds: number): Promise<void> {
@@ -86,10 +97,12 @@ export function createSyncQueue({
         for (const inspection of inspections) {
             let state = metadataFor(inspection);
             if (state.status === "synced" || state.status === "failed") continue;
+            let currentInspection = { ...inspection, sync: state };
 
             if (state.status === "syncing") {
                 state = { ...state, status: "pending" };
                 await storage.update(inspection.id, state);
+                currentInspection = { ...currentInspection, sync: state };
             } else if (!inspection.sync) {
                 await storage.update(inspection.id, state);
             }
@@ -102,12 +115,51 @@ export function createSyncQueue({
             while (state.attempts < MAX_SYNC_ATTEMPTS) {
                 state = { ...state, attempts: state.attempts + 1, status: "syncing" };
                 await storage.update(inspection.id, state);
+                currentInspection = { ...currentInspection, sync: state };
 
                 try {
-                    const acknowledgement = await transport(inspection, state.idempotencyKey);
+                    const acknowledgement = await transport(currentInspection, state.idempotencyKey);
                     if (acknowledgement.idempotencyKey !== state.idempotencyKey) {
                         throw new Error("El acuse no coincide con la clave de idempotencia.");
                     }
+
+                    if (acknowledgement.outcome === "conflict") {
+                        if (acknowledgement.remoteInspection.id !== currentInspection.id) {
+                            throw new Error("El conflicto recibido no corresponde a la inspección sincronizada.");
+                        }
+
+                        const resolution = resolveInspectionConflict(
+                            currentInspection,
+                            acknowledgement.remoteInspection,
+                        );
+
+                        if (resolution.source === "remote") {
+                            const synchronizedRemote = {
+                                ...resolution.winner,
+                                sync: { ...state, status: "synced" as const, lastError: undefined },
+                            };
+                            await storage.replace(synchronizedRemote);
+                            currentInspection = synchronizedRemote;
+                            state = synchronizedRemote.sync;
+                            break;
+                        }
+
+                        if (state.attempts >= MAX_SYNC_ATTEMPTS) {
+                            state = {
+                                ...state,
+                                status: "failed",
+                                lastError: "Se agotaron los intentos al reenviar la versión local ganadora del conflicto.",
+                            };
+                            await storage.update(inspection.id, state);
+                            break;
+                        }
+
+                        state = { ...state, status: "pending", lastError: undefined };
+                        await storage.update(inspection.id, state);
+                        currentInspection = { ...currentInspection, sync: state };
+                        continue;
+                    }
+
                     state = { ...state, status: "synced", lastError: undefined };
                     await storage.update(inspection.id, state);
                     break;

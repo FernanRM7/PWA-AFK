@@ -1,4 +1,4 @@
-export const VERSION_ESQUEMA = 1;
+export const VERSION_ESQUEMA = 2;
 export const NOMBRE_ALMACEN = "inspections";
 export const NOMBRE_BASE_DE_DATOS = "afk-inspections-db";
 
@@ -22,6 +22,7 @@ export type InspeccionGuardada = {
     findings: number;
     summary: string;
     createdAt: string;
+    updatedAt: string;
     schemaVersion: number;
     sync: EstadoColaSincronizacion;
 };
