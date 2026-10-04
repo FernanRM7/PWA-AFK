@@ -180,3 +180,23 @@ La suite TypeScript valida el manifest, sus iconos, la metadata del layout y la 
 | Icono SVG | Abrir `http://localhost:3000/icon.svg` y revisar el favicon de la pestaña. | El SVG carga y `metadata.icons` lo referencia como favicon. | Cumplido: `public/icon.svg` carga y el layout referencia `/icon.svg`. |
 
 **Supuestos y límites:** la comprobación manual usa datos sintéticos y un servidor local; no prueba instalación en todos los navegadores, lector de pantalla, persistencia, API, sincronización ni offline. `npm ci` puede informar vulnerabilidades transitivas; no se ejecuta `npm audit fix` porque cambiaría dependencias fuera del alcance.
+
+## Captura offline y sincronización (Semana 5)
+
+La ruta `/inspecciones` permite crear inspecciones exclusivamente sintéticas. Se guardan en IndexedDB, sobreviven a una recarga y se encolan para sincronización. Al recuperar conectividad, la cola reintenta con backoff exponencial (1, 2, 4 y 8 segundos entre un máximo de cinco intentos); los fallos agotados permanecen guardados y permiten reintento manual. Cada registro conserva una clave de idempotencia estable.
+
+La sincronización usa un transporte sintético e inyectable: no hay API ni servidor remoto en este proyecto. La política automática compara `updatedAt`; gana la versión más reciente y, si los timestamps empatan, gana la remota. Si gana la local, se reenvía con la misma clave hasta aceptación. El reloj del dispositivo puede estar desfasado; la sincronización con un backend real queda fuera de alcance.
+
+Para ejecutar y verificar desde un entorno limpio:
+
+```bash
+npm ci
+npm test
+make verify
+```
+
+Las pruebas de `tests/storage.spec.ts`, `tests/queue.spec.ts` y `tests/sync.spec.ts` usan IndexedDB/transportes sintéticos y tiempos inyectados; no dependen de red privada ni esperan los intervalos reales de reintento. El workflow `.github/workflows/week-05-w05-sync-data.yml` ejecuta instalación, build, comprobación de artefactos y tests, y publica la evidencia de GitHub Actions.
+
+Para probar la captura manualmente, ejecuta `npm run dev`, abre `http://localhost:3000/inspecciones`, crea un registro sintético sin conexión y vuelve a conectar el navegador. La simulación confirma el flujo local, pero no demuestra entrega ni deduplicación en un servidor remoto real.
+
+El check público del kit mostró coincidencias de texto legítimo (`js-tokens`, `resolveDmxColorTokens`, la ruta sensible `/token` y documentación de seguridad) y aun así terminó con `PUBLIC_OK` y código 0. Su búsqueda está negada con `! rg` bajo `set -e`, por lo que los hallazgos no hacen fallar el script; sirve como check mínimo de estructura, no como detector de secretos. Revisé las coincidencias mostradas y no vi credenciales reales; no borré documentación ni alteré el checker.
