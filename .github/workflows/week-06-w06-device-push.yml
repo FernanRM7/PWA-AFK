@@ -1,0 +1,42 @@
+name: Academic Evaluation Feedback - W06 Device Capabilities
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: AC-01 - Instalación limpia y build completan.
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+      - name: AC-02 - Los artefactos declarados para W06 existen.
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f 'src/lib/device/geolocation.ts'
+          test -f 'src/app/inspecciones/page.tsx'
+          test -f 'tests/geolocation.spec.ts'
+          test -f 'docs/capabilities.md'
+          test -f 'evidence/individual.md'
+      - name: AC-03 - Las pruebas reproducibles pasan.
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm test
