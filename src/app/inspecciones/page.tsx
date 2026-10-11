@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LoadingState } from "@/components/loading-state";
 import { filterInspections } from "@/lib/data/inspections";
 import { getCurrentLocation, type GeolocationResult } from "@/lib/device/geolocation";
+import { abrirCamara, capturarFotograma, liberarCamara, type CapturaCamara } from "@/lib/device/camera";
 import { guardarInspeccion, obtenerTodasLasInspecciones } from "@/lib/storage/inspection-store";
 import {
   enqueueInspectionForSync,
@@ -16,6 +17,8 @@ import type { SyncQueueSummary } from "@/lib/sync/queue";
 import type { InspeccionGuardada } from "@/lib/storage/schema";
 
 type ListState = "loading" | "error" | "success";
+
+type EstadoCamara = "inactiva" | "abriendo" | "activa" | "capturada" | "denied" | "unavailable" | "error";
 
 export default function InspectionsPage() {
   const [state, setState] = useState<ListState>("loading");
@@ -36,6 +39,12 @@ export default function InspectionsPage() {
   const [resultadoUbicacion, setResultadoUbicacion] = useState<GeolocationResult | null>(null);
   const [consultandoUbicacion, setConsultandoUbicacion] = useState(false);
   const solicitudUbicacion = useRef(0);
+  const [estadoCamara, setEstadoCamara] = useState<EstadoCamara>("inactiva");
+  const [captura, setCaptura] = useState<CapturaCamara | null>(null);
+  const solicitudCamara = useRef(0);
+  const streamCamara = useRef<MediaStream | null>(null);
+  const capturaRef = useRef<CapturaCamara | null>(null);
+  const videoCamara = useRef<HTMLVideoElement | null>(null);
   const [syncSummary, setSyncSummary] = useState<SyncQueueSummary>({ pending: 0, syncing: 0, failed: 0, synced: 0 });
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncError, setSyncError] = useState("");
@@ -47,6 +56,21 @@ export default function InspectionsPage() {
   useEffect(() => () => {
     solicitudUbicacion.current += 1;
   }, []);
+
+  useEffect(() => () => {
+    solicitudCamara.current += 1;
+    liberarCamara(streamCamara.current);
+    streamCamara.current = null;
+    capturaRef.current?.descartar();
+    capturaRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    const video = videoCamara.current;
+    if (estadoCamara !== "activa" || !video || !streamCamara.current) return;
+    video.srcObject = streamCamara.current;
+    void video.play().catch(() => undefined);
+  }, [estadoCamara]);
 
   function limpiarUbicacionTemporal() {
     solicitudUbicacion.current += 1;
@@ -65,8 +89,65 @@ export default function InspectionsPage() {
     }
   }
 
+  function descartarCaptura() {
+    capturaRef.current?.descartar();
+    capturaRef.current = null;
+    setCaptura(null);
+  }
+
+  function limpiarCamaraTemporal() {
+    solicitudCamara.current += 1;
+    liberarCamara(streamCamara.current);
+    streamCamara.current = null;
+    descartarCaptura();
+    setEstadoCamara("inactiva");
+  }
+
+  async function manejarAperturaCamara() {
+    limpiarCamaraTemporal();
+    const solicitudActual = solicitudCamara.current;
+    setEstadoCamara("abriendo");
+    const resultado = await abrirCamara();
+
+    if (solicitudActual !== solicitudCamara.current) {
+      if (resultado.status === "available") liberarCamara(resultado.stream);
+      return;
+    }
+
+    if (resultado.status === "available") {
+      streamCamara.current = resultado.stream;
+      setEstadoCamara("activa");
+    } else {
+      setEstadoCamara(resultado.status);
+    }
+  }
+
+  async function manejarCapturaFoto() {
+    const video = videoCamara.current;
+    if (!video) return;
+    const solicitudActual = solicitudCamara.current;
+    const resultado = await capturarFotograma(video);
+
+    if (solicitudActual !== solicitudCamara.current) {
+      if (resultado.status === "captured") resultado.captura.descartar();
+      return;
+    }
+
+    liberarCamara(streamCamara.current);
+    streamCamara.current = null;
+
+    if (resultado.status === "captured") {
+      capturaRef.current = resultado.captura;
+      setCaptura(resultado.captura);
+      setEstadoCamara("capturada");
+    } else {
+      setEstadoCamara("error");
+    }
+  }
+
   function manejarCancelacionCaptura() {
     limpiarUbicacionTemporal();
+    limpiarCamaraTemporal();
     setErroresFormulario([]);
     setFormulario({ location: "", date: "", inspector: "", status: "ok", findings: "0", summary: "" });
   }
@@ -114,6 +195,7 @@ export default function InspectionsPage() {
   async function manejarEnvioFormulario(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     limpiarUbicacionTemporal();
+    limpiarCamaraTemporal();
     setGuardando(true);
     setErroresFormulario([]);
 
@@ -363,6 +445,90 @@ export default function InspectionsPage() {
                       : resultadoUbicacion.status === "unavailable"
                         ? "Este dispositivo no ofrece ubicación. Puedes guardar la inspección sin ella."
                         : "No se pudo consultar la ubicación. Puedes guardar la inspección sin ella."}
+              </p>
+            )}
+          </fieldset>
+
+          <fieldset className="space-y-2 rounded-md border p-3 sm:col-span-2">
+            <legend className="px-1 text-sm font-medium">Evidencia con cámara (opcional)</legend>
+            <p className="text-sm text-muted-foreground" id="capture-camera-help">
+              La cámara solo se abre cuando lo solicitas la foto no se guarda se descarta al guardar o cancelar.
+            </p>
+
+            {(estadoCamara === "inactiva" || estadoCamara === "abriendo" || estadoCamara === "denied" || estadoCamara === "unavailable" || estadoCamara === "error") && (
+              <button
+                aria-describedby="capture-camera-help"
+                className="min-h-10 rounded-md border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+                disabled={estadoCamara === "abriendo"}
+                onClick={manejarAperturaCamara}
+                type="button"
+              >
+                {estadoCamara === "abriendo" ? "Abriendo cámara…" : "Abrir cámara"}
+              </button>
+            )}
+
+            {estadoCamara === "activa" && (
+              <div className="space-y-2">
+                <video
+                  aria-label="Vista previa de la cámara"
+                  autoPlay
+                  className="w-full max-w-sm rounded-md border bg-muted"
+                  muted
+                  playsInline
+                  ref={videoCamara}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className="min-h-10 rounded-md border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+                    onClick={manejarCapturaFoto}
+                    type="button"
+                  >
+                    Tomar foto
+                  </button>
+                  <button
+                    className="min-h-10 rounded-md border px-3 text-sm font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    onClick={limpiarCamaraTemporal}
+                    type="button"
+                  >
+                    Cancelar cámara
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {estadoCamara === "capturada" && captura && (
+              <div className="space-y-2">
+                <img
+                  alt="Vista previa de la foto capturada (temporal)"
+                  className="w-full max-w-sm rounded-md border"
+                  src={captura.previewUrl}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className="min-h-10 rounded-md border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+                    onClick={manejarAperturaCamara}
+                    type="button"
+                  >
+                    Repetir foto
+                  </button>
+                  <button
+                    className="min-h-10 rounded-md border px-3 text-sm font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    onClick={limpiarCamaraTemporal}
+                    type="button"
+                  >
+                    Descartar foto
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {estadoCamara !== "inactiva" && estadoCamara !== "abriendo" && estadoCamara !== "activa" && estadoCamara !== "capturada" && (
+              <p aria-live="polite" className="text-sm" role="status">
+                {estadoCamara === "denied"
+                  ? "No se concedió permiso de cámara. Puedes guardar la inspección sin foto."
+                  : estadoCamara === "unavailable"
+                    ? "Este dispositivo no ofrece cámara puedes guardar la inspección sin foto."
+                    : "No se pudo usar la cámara puedes guardar la inspección sin foto."}
               </p>
             )}
           </fieldset>
