@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LoadingState } from "@/components/loading-state";
 import { filterInspections } from "@/lib/data/inspections";
+import { getCurrentLocation, type GeolocationResult } from "@/lib/device/geolocation";
+import { abrirCamara, capturarFotograma, liberarCamara, type CapturaCamara } from "@/lib/device/camera";
+import {
+  getLocalNotificationPermission,
+  notifyInspectionSaved,
+  requestLocalNotificationPermission,
+  type NotificationCapabilityStatus,
+} from "@/lib/notifications/client";
 import { guardarInspeccion, obtenerTodasLasInspecciones } from "@/lib/storage/inspection-store";
 import {
   enqueueInspectionForSync,
@@ -15,6 +23,8 @@ import type { SyncQueueSummary } from "@/lib/sync/queue";
 import type { InspeccionGuardada } from "@/lib/storage/schema";
 
 type ListState = "loading" | "error" | "success";
+
+type EstadoCamara = "inactiva" | "abriendo" | "activa" | "capturada" | "denied" | "unavailable" | "error";
 
 export default function InspectionsPage() {
   const [state, setState] = useState<ListState>("loading");
@@ -32,13 +42,124 @@ export default function InspectionsPage() {
   });
   const [erroresFormulario, setErroresFormulario] = useState<string[]>([]);
   const [guardando, setGuardando] = useState(false);
+  const [resultadoUbicacion, setResultadoUbicacion] = useState<GeolocationResult | null>(null);
+  const [consultandoUbicacion, setConsultandoUbicacion] = useState(false);
+  const solicitudUbicacion = useRef(0);
+  const [estadoCamara, setEstadoCamara] = useState<EstadoCamara>("inactiva");
+  const [captura, setCaptura] = useState<CapturaCamara | null>(null);
+  const solicitudCamara = useRef(0);
+  const streamCamara = useRef<MediaStream | null>(null);
+  const capturaRef = useRef<CapturaCamara | null>(null);
+  const videoCamara = useRef<HTMLVideoElement | null>(null);
   const [syncSummary, setSyncSummary] = useState<SyncQueueSummary>({ pending: 0, syncing: 0, failed: 0, synced: 0 });
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncError, setSyncError] = useState("");
+  const [notificationPermission, setNotificationPermission] = useState<NotificationCapabilityStatus>("default");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [requestingNotificationPermission, setRequestingNotificationPermission] = useState(false);
 
   useEffect(() => {
     obtenerTodasLasInspecciones().then(setInspeccionesGuardadas);
   }, []);
+
+  useEffect(() => () => {
+    solicitudUbicacion.current += 1;
+  }, []);
+
+  useEffect(() => () => {
+    solicitudCamara.current += 1;
+    liberarCamara(streamCamara.current);
+    streamCamara.current = null;
+    capturaRef.current?.descartar();
+    capturaRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    const video = videoCamara.current;
+    if (estadoCamara !== "activa" || !video || !streamCamara.current) return;
+    video.srcObject = streamCamara.current;
+    void video.play().catch(() => undefined);
+  }, [estadoCamara]);
+
+  function limpiarUbicacionTemporal() {
+    solicitudUbicacion.current += 1;
+    setResultadoUbicacion(null);
+    setConsultandoUbicacion(false);
+  }
+
+  async function manejarConsultaUbicacion() {
+    const solicitudActual = ++solicitudUbicacion.current;
+    setConsultandoUbicacion(true);
+    try {
+      const resultado = await getCurrentLocation();
+      if (solicitudActual === solicitudUbicacion.current) setResultadoUbicacion(resultado);
+    } finally {
+      if (solicitudActual === solicitudUbicacion.current) setConsultandoUbicacion(false);
+    }
+  }
+
+  function descartarCaptura() {
+    capturaRef.current?.descartar();
+    capturaRef.current = null;
+    setCaptura(null);
+  }
+
+  function limpiarCamaraTemporal() {
+    solicitudCamara.current += 1;
+    liberarCamara(streamCamara.current);
+    streamCamara.current = null;
+    descartarCaptura();
+    setEstadoCamara("inactiva");
+  }
+
+  async function manejarAperturaCamara() {
+    limpiarCamaraTemporal();
+    const solicitudActual = solicitudCamara.current;
+    setEstadoCamara("abriendo");
+    const resultado = await abrirCamara();
+
+    if (solicitudActual !== solicitudCamara.current) {
+      if (resultado.status === "available") liberarCamara(resultado.stream);
+      return;
+    }
+
+    if (resultado.status === "available") {
+      streamCamara.current = resultado.stream;
+      setEstadoCamara("activa");
+    } else {
+      setEstadoCamara(resultado.status);
+    }
+  }
+
+  async function manejarCapturaFoto() {
+    const video = videoCamara.current;
+    if (!video) return;
+    const solicitudActual = solicitudCamara.current;
+    const resultado = await capturarFotograma(video);
+
+    if (solicitudActual !== solicitudCamara.current) {
+      if (resultado.status === "captured") resultado.captura.descartar();
+      return;
+    }
+
+    liberarCamara(streamCamara.current);
+    streamCamara.current = null;
+
+    if (resultado.status === "captured") {
+      capturaRef.current = resultado.captura;
+      setCaptura(resultado.captura);
+      setEstadoCamara("capturada");
+    } else {
+      setEstadoCamara("error");
+    }
+  }
+
+  function manejarCancelacionCaptura() {
+    limpiarUbicacionTemporal();
+    limpiarCamaraTemporal();
+    setErroresFormulario([]);
+    setFormulario({ location: "", date: "", inspector: "", status: "ok", findings: "0", summary: "" });
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -80,8 +201,26 @@ export default function InspectionsPage() {
     }
   }
 
+  async function manejarActivacionNotificaciones() {
+    setRequestingNotificationPermission(true);
+    const permission = await requestLocalNotificationPermission();
+    setNotificationPermission(permission);
+    setNotificationMessage(
+      permission === "granted"
+        ? "Permiso concedido. Los próximos registros guardados podrán mostrar una notificación local."
+        : permission === "denied"
+          ? "No se concedió el permiso. La confirmación seguirá apareciendo en esta página."
+          : permission === "unsupported"
+            ? "Este navegador no ofrece notificaciones. La confirmación seguirá apareciendo en esta página."
+            : "No se pudo solicitar el permiso. Puedes continuar y guardar inspecciones normalmente.",
+    );
+    setRequestingNotificationPermission(false);
+  }
+
   async function manejarEnvioFormulario(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    limpiarUbicacionTemporal();
+    limpiarCamaraTemporal();
     setGuardando(true);
     setErroresFormulario([]);
 
@@ -103,6 +242,21 @@ export default function InspectionsPage() {
 
     setInspeccionesGuardadas((actuales) => [resultado.inspection, ...actuales]);
     setFormulario({ location: "", date: "", inspector: "", status: "ok", findings: "0", summary: "" });
+    setNotificationMessage("Inspección sintética guardada localmente.");
+    const permission = getLocalNotificationPermission();
+    setNotificationPermission(permission);
+    if (permission === "granted") {
+      const delivery = await notifyInspectionSaved();
+      setNotificationMessage(
+        delivery === "shown"
+          ? "Inspección guardada. Se mostró una notificación local."
+          : delivery === "denied"
+            ? "Inspección guardada. El permiso de notificación está denegado; la confirmación aparece aquí."
+            : delivery === "unsupported"
+              ? "Inspección guardada. Este navegador no ofrece notificaciones; la confirmación aparece aquí."
+              : "Inspección guardada. No se pudo mostrar la notificación; la confirmación aparece aquí.",
+      );
+    }
     try {
       await enqueueInspectionForSync(resultado.inspection);
       if (navigator.onLine) {
@@ -225,6 +379,23 @@ export default function InspectionsPage() {
             </button>
           )}
         </div>
+        <div className="space-y-2 text-sm">
+          <button
+            className="min-h-10 rounded-md border px-3 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+            disabled={requestingNotificationPermission || notificationPermission === "granted"}
+            onClick={manejarActivacionNotificaciones}
+            type="button"
+          >
+            {requestingNotificationPermission
+              ? "Solicitando permiso…"
+              : notificationPermission === "granted"
+                ? "Notificaciones activadas"
+                : "Activar notificaciones"}
+          </button>
+          <p aria-live="polite" className="text-sm text-muted-foreground" role="status">
+            {notificationMessage || "Las notificaciones son opcionales. El permiso se solicitará solo si activas esta opción."}
+          </p>
+        </div>
         {syncError && <p className="text-sm text-destructive" role="alert">{syncError}</p>}
 
         <form className="grid gap-3 sm:grid-cols-2" onSubmit={manejarEnvioFormulario}>
@@ -297,6 +468,128 @@ export default function InspectionsPage() {
             />
           </div>
 
+          <fieldset className="space-y-2 rounded-md border p-3 sm:col-span-2">
+            <legend className="px-1 text-sm font-medium">Ubicación actual (opcional)</legend>
+            <p className="text-sm text-muted-foreground" id="capture-geolocation-help">
+              Solo se consulta cuando lo solicitas. La ubicación no se guarda ni se sincroniza.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                aria-describedby="capture-geolocation-help"
+                className="min-h-10 rounded-md border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+                disabled={consultandoUbicacion}
+                onClick={manejarConsultaUbicacion}
+                type="button"
+              >
+                {consultandoUbicacion ? "Consultando ubicación…" : "Consultar ubicación actual"}
+              </button>
+              <button
+                className="min-h-10 rounded-md border px-3 text-sm font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+                onClick={limpiarUbicacionTemporal}
+                type="button"
+              >
+                Omitir ubicación
+              </button>
+            </div>
+            {resultadoUbicacion && (
+              <p aria-live="polite" className="text-sm" role="status">
+                {resultadoUbicacion.status === "available"
+                  ? `Ubicación consultada: ${resultadoUbicacion.coordinates.latitude.toFixed(5)}, ${resultadoUbicacion.coordinates.longitude.toFixed(5)} (precisión aproximada: ${Math.round(resultadoUbicacion.coordinates.accuracy)} m). Solo es temporal.`
+                  : resultadoUbicacion.status === "denied"
+                    ? "No se concedió permiso de ubicación. Puedes guardar la inspección sin ella."
+                    : resultadoUbicacion.status === "timeout"
+                      ? "La consulta de ubicación agotó el tiempo. Puedes guardar la inspección sin ella."
+                      : resultadoUbicacion.status === "unavailable"
+                        ? "Este dispositivo no ofrece ubicación. Puedes guardar la inspección sin ella."
+                        : "No se pudo consultar la ubicación. Puedes guardar la inspección sin ella."}
+              </p>
+            )}
+          </fieldset>
+
+          <fieldset className="space-y-2 rounded-md border p-3 sm:col-span-2">
+            <legend className="px-1 text-sm font-medium">Evidencia con cámara (opcional)</legend>
+            <p className="text-sm text-muted-foreground" id="capture-camera-help">
+              La cámara solo se abre cuando lo solicitas la foto no se guarda se descarta al guardar o cancelar.
+            </p>
+
+            {(estadoCamara === "inactiva" || estadoCamara === "abriendo" || estadoCamara === "denied" || estadoCamara === "unavailable" || estadoCamara === "error") && (
+              <button
+                aria-describedby="capture-camera-help"
+                className="min-h-10 rounded-md border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+                disabled={estadoCamara === "abriendo"}
+                onClick={manejarAperturaCamara}
+                type="button"
+              >
+                {estadoCamara === "abriendo" ? "Abriendo cámara…" : "Abrir cámara"}
+              </button>
+            )}
+
+            {estadoCamara === "activa" && (
+              <div className="space-y-2">
+                <video
+                  aria-label="Vista previa de la cámara"
+                  autoPlay
+                  className="w-full max-w-sm rounded-md border bg-muted"
+                  muted
+                  playsInline
+                  ref={videoCamara}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className="min-h-10 rounded-md border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+                    onClick={manejarCapturaFoto}
+                    type="button"
+                  >
+                    Tomar foto
+                  </button>
+                  <button
+                    className="min-h-10 rounded-md border px-3 text-sm font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    onClick={limpiarCamaraTemporal}
+                    type="button"
+                  >
+                    Cancelar cámara
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {estadoCamara === "capturada" && captura && (
+              <div className="space-y-2">
+                <img
+                  alt="Vista previa de la foto capturada (temporal)"
+                  className="w-full max-w-sm rounded-md border"
+                  src={captura.previewUrl}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className="min-h-10 rounded-md border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+                    onClick={manejarAperturaCamara}
+                    type="button"
+                  >
+                    Repetir foto
+                  </button>
+                  <button
+                    className="min-h-10 rounded-md border px-3 text-sm font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    onClick={limpiarCamaraTemporal}
+                    type="button"
+                  >
+                    Descartar foto
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {estadoCamara !== "inactiva" && estadoCamara !== "abriendo" && estadoCamara !== "activa" && estadoCamara !== "capturada" && (
+              <p aria-live="polite" className="text-sm" role="status">
+                {estadoCamara === "denied"
+                  ? "No se concedió permiso de cámara. Puedes guardar la inspección sin foto."
+                  : estadoCamara === "unavailable"
+                    ? "Este dispositivo no ofrece cámara puedes guardar la inspección sin foto."
+                    : "No se pudo usar la cámara puedes guardar la inspección sin foto."}
+              </p>
+            )}
+          </fieldset>
+
           {erroresFormulario.length > 0 && (
             <div aria-live="assertive" className="sm:col-span-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive" role="alert">
               <ul className="list-disc space-y-1 pl-4">
@@ -307,13 +600,23 @@ export default function InspectionsPage() {
             </div>
           )}
 
-          <button
-            className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground sm:col-span-2 sm:w-fit"
-            disabled={guardando}
-            type="submit"
-          >
-            {guardando ? "Guardando..." : "Guardar inspección"}
-          </button>
+          <div className="flex flex-wrap gap-2 sm:col-span-2">
+            <button
+              className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
+              disabled={guardando}
+              type="submit"
+            >
+              {guardando ? "Guardando..." : "Guardar inspección"}
+            </button>
+            <button
+              className="h-10 rounded-md border px-4 text-sm font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+              disabled={guardando}
+              onClick={manejarCancelacionCaptura}
+              type="button"
+            >
+              Cancelar captura
+            </button>
+          </div>
         </form>
 
         {inspeccionesGuardadas.length > 0 && (
