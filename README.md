@@ -200,3 +200,19 @@ Las pruebas de `tests/storage.spec.ts`, `tests/queue.spec.ts` y `tests/sync.spec
 Para probar la captura manualmente, ejecuta `npm run dev`, abre `http://localhost:3000/inspecciones`, crea un registro sintético sin conexión y vuelve a conectar el navegador. La simulación confirma el flujo local, pero no demuestra entrega ni deduplicación en un servidor remoto real.
 
 El check público del kit mostró coincidencias de texto legítimo (`js-tokens`, `resolveDmxColorTokens`, la ruta sensible `/token` y documentación de seguridad) y aun así terminó con `PUBLIC_OK` y código 0. Su búsqueda está negada con `! rg` bajo `set -e`, por lo que los hallazgos no hacen fallar el script; sirve como check mínimo de estructura, no como detector de secretos. Revisé las coincidencias mostradas y no vi credenciales reales; no borré documentación ni alteré el checker.
+
+## Capacidades del dispositivo (Semana 6)
+
+En `/inspecciones`, la cámara y la geolocalización son opcionales y solo se solicitan al activar sus controles. Una foto o ubicación puede aparecer temporalmente durante la captura, pero se descarta al guardar o cancelar. No se incluye en IndexedDB, en la cola offline ni en sincronización. Los permisos denegados, APIs ausentes y errores de dispositivo no bloquean el registro sintético.
+
+El botón **Activar notificaciones** solicita permiso de forma explícita. Al guardar una inspección, si el navegador ya tiene permiso concedido, se muestra una notificación local genérica mediante el Service Worker o la API local disponible. Sin soporte, con permiso denegado o si falla la entrega, la app conserva una confirmación accesible en pantalla. No hay Push remoto ni backend.
+
+Para preparar y verificar el proyecto desde un entorno limpio:
+
+```bash
+npm ci
+npm test
+make verify
+```
+
+El kit académico se distribuye aparte del repositorio. Cuando esté disponible junto a la copia local, ejecuta también `bash PWA-w06-kit-estudiante/public-tests/check.sh`; su resultado se documenta en [docs/capabilities.md](docs/capabilities.md). Las pruebas W06 usan proveedores simulados y datos sintéticos; no requieren cámara, GPS, servicios privados ni permiso real. El detalle de permisos, retención, fallbacks, límites y pruebas está en [docs/capabilities.md](docs/capabilities.md). Cada integrante registra su SHA, decisión técnica, prueba observada, limitación y uso de IA en `evidence/individual.md`; no se debe afirmar una prueba manual que no se haya realizado.

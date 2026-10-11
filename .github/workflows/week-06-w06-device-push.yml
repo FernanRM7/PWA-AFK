@@ -30,13 +30,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -f 'src/lib/device/camera.ts'
           test -f 'src/lib/device/geolocation.ts'
-          test -f 'src/app/inspecciones/page.tsx'
-          test -f 'tests/geolocation.spec.ts'
+          test -f 'src/lib/notifications/client.ts'
           test -f 'docs/capabilities.md'
+          test -f 'tests/capabilities.spec.ts'
+          test -f 'README.md'
+          test -f 'src/app/inspecciones/page.tsx'
+          test -f 'tests/camera.spec.ts'
+          test -f 'tests/geolocation.spec.ts'
           test -f 'evidence/individual.md'
       - name: AC-03 - Las pruebas reproducibles pasan.
         shell: bash
         run: |
           set -euo pipefail
           npm test
+      - name: AC-04 - La evidencia requerida está presente.
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f 'README.md'
+          test -f 'evidence/individual.md'

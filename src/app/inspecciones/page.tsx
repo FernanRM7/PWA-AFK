@@ -5,6 +5,12 @@ import { LoadingState } from "@/components/loading-state";
 import { filterInspections } from "@/lib/data/inspections";
 import { getCurrentLocation, type GeolocationResult } from "@/lib/device/geolocation";
 import { abrirCamara, capturarFotograma, liberarCamara, type CapturaCamara } from "@/lib/device/camera";
+import {
+  getLocalNotificationPermission,
+  notifyInspectionSaved,
+  requestLocalNotificationPermission,
+  type NotificationCapabilityStatus,
+} from "@/lib/notifications/client";
 import { guardarInspeccion, obtenerTodasLasInspecciones } from "@/lib/storage/inspection-store";
 import {
   enqueueInspectionForSync,
@@ -48,6 +54,9 @@ export default function InspectionsPage() {
   const [syncSummary, setSyncSummary] = useState<SyncQueueSummary>({ pending: 0, syncing: 0, failed: 0, synced: 0 });
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncError, setSyncError] = useState("");
+  const [notificationPermission, setNotificationPermission] = useState<NotificationCapabilityStatus>("default");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [requestingNotificationPermission, setRequestingNotificationPermission] = useState(false);
 
   useEffect(() => {
     obtenerTodasLasInspecciones().then(setInspeccionesGuardadas);
@@ -192,6 +201,22 @@ export default function InspectionsPage() {
     }
   }
 
+  async function manejarActivacionNotificaciones() {
+    setRequestingNotificationPermission(true);
+    const permission = await requestLocalNotificationPermission();
+    setNotificationPermission(permission);
+    setNotificationMessage(
+      permission === "granted"
+        ? "Permiso concedido. Los próximos registros guardados podrán mostrar una notificación local."
+        : permission === "denied"
+          ? "No se concedió el permiso. La confirmación seguirá apareciendo en esta página."
+          : permission === "unsupported"
+            ? "Este navegador no ofrece notificaciones. La confirmación seguirá apareciendo en esta página."
+            : "No se pudo solicitar el permiso. Puedes continuar y guardar inspecciones normalmente.",
+    );
+    setRequestingNotificationPermission(false);
+  }
+
   async function manejarEnvioFormulario(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     limpiarUbicacionTemporal();
@@ -217,6 +242,21 @@ export default function InspectionsPage() {
 
     setInspeccionesGuardadas((actuales) => [resultado.inspection, ...actuales]);
     setFormulario({ location: "", date: "", inspector: "", status: "ok", findings: "0", summary: "" });
+    setNotificationMessage("Inspección sintética guardada localmente.");
+    const permission = getLocalNotificationPermission();
+    setNotificationPermission(permission);
+    if (permission === "granted") {
+      const delivery = await notifyInspectionSaved();
+      setNotificationMessage(
+        delivery === "shown"
+          ? "Inspección guardada. Se mostró una notificación local."
+          : delivery === "denied"
+            ? "Inspección guardada. El permiso de notificación está denegado; la confirmación aparece aquí."
+            : delivery === "unsupported"
+              ? "Inspección guardada. Este navegador no ofrece notificaciones; la confirmación aparece aquí."
+              : "Inspección guardada. No se pudo mostrar la notificación; la confirmación aparece aquí.",
+      );
+    }
     try {
       await enqueueInspectionForSync(resultado.inspection);
       if (navigator.onLine) {
@@ -338,6 +378,23 @@ export default function InspectionsPage() {
               Reintentar sincronización
             </button>
           )}
+        </div>
+        <div className="space-y-2 text-sm">
+          <button
+            className="min-h-10 rounded-md border px-3 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+            disabled={requestingNotificationPermission || notificationPermission === "granted"}
+            onClick={manejarActivacionNotificaciones}
+            type="button"
+          >
+            {requestingNotificationPermission
+              ? "Solicitando permiso…"
+              : notificationPermission === "granted"
+                ? "Notificaciones activadas"
+                : "Activar notificaciones"}
+          </button>
+          <p aria-live="polite" className="text-sm text-muted-foreground" role="status">
+            {notificationMessage || "Las notificaciones son opcionales. El permiso se solicitará solo si activas esta opción."}
+          </p>
         </div>
         {syncError && <p className="text-sm text-destructive" role="alert">{syncError}</p>}
 
