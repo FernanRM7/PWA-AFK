@@ -19,6 +19,14 @@
 - Grupo y equipo: "B" 9B-E11
 - Repositorio del equipo: https://github.com/FernanRM7/PWA-AFK
 
+## Integrante: Fernando Spencer Rodriguez Mendoza — Semana 08
+
+- **Contribución concreta:** añadí la estrategia riesgo–capa en `docs/test-strategy.md`, el workflow `.github/workflows/academic-evaluation.yml`, lint y cobertura/reporte JUnit de Vitest y la referencia reproducible en README.
+- **Decisión técnica:** configurar checks reales para que CI compruebe desde ahora el estado existente, recoja automáticamente futuras pruebas en `tests/unit/` y `tests/integration/`, y active el job E2E cuando se incorpore `tests/e2e/` (exigiendo entonces `npm run test:e2e`). El workflow preserva reportes con `if: always()`.
+- **Comandos y resultados observados:** `/opt/homebrew/bin/npm ci` PASS antes de los últimos cambios de dependencias; luego instalé ESLint y el proveedor V8 de Vitest con npm. `/opt/homebrew/bin/npm run lint` PASS con una advertencia existente por `<img>` en `src/app/inspecciones/page.tsx:558`; `/opt/homebrew/bin/npx tsc --noEmit` PASS; `/opt/homebrew/bin/npm test` PASS (14 archivos, 91 pruebas); `/opt/homebrew/bin/npm run test:vitest` PASS (91 pruebas; cobertura V8: statements 62.11%, branches 55.31%, functions 53.9%, lines 64.84%; generó JUnit); `/opt/homebrew/bin/npm run build` PASS (6 páginas); `/opt/homebrew/bin/npm run verify` PASS (`Verificación técnica: pass`, tests y build). `make verify` no se ejecutó por separado. `npm ci` informó 17 vulnerabilidades transitorias (3 moderadas, 12 altas y 2 críticas); el alias interactivo `npm` apunta a Bun, por eso usé `/opt/homebrew/bin/npm`. No hay ejecución remota de Actions asociada aún.
+- **Qué demuestra y qué no:** las comprobaciones prueban que la configuración actual funciona y la estrategia define aserciones para captura inválida, persistencia/reconexión, idempotencia y capacidades opcionales. No demuestran aún esos escenarios E2E ni una regresión controlada; corresponden a las pruebas de los issues paralelos.
+- **Límite y uso de IA:** la etapa E2E queda preparada, pero se activará al integrarse `tests/e2e/` y requerirá el script declarado. Usé un asistente de IA como apoyo para inspeccionar el issue y preparar documentación/configuración; revisé los cambios y ejecuté los comandos reportados.
+
 ## Integrante: Fernando Spencer Rodriguez Mendoza
 
 - **Mi contribución concreta y enlace:** redacté el problema, los usuarios, los escenarios y los requisitos funcionales en [`docs/requirements.md`](../blob/semana-1-equipo/docs/requirements.md). La contribución está en el commit [`2adeb1e`](https://github.com/FernanRM7/PWA-AFK/commit/2adeb1e) y se integra mediante el [PR #7](https://github.com/FernanRM7/PWA-AFK/pull/7).

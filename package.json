@@ -10,9 +10,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "lint": "next lint",
     "test": "npm run test:starter && vitest run",
     "test:starter": "node tests/starter.spec.mjs && node tests/shell.spec.mjs && node tests/shell-acceptance.spec.mjs",
-    "test:vitest": "vitest run",
+    "test:vitest": "vitest run --coverage --coverage.reporter=text --coverage.reporter=lcov --reporter=default --reporter=junit --outputFile=reports/vitest-junit.xml",
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
@@ -35,7 +36,10 @@
     "@types/node": "^20.14.15",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@vitest/coverage-v8": "^4.1.12",
     "autoprefixer": "^10.5.5",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
     "fake-indexeddb": "^6.2.5",
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",

@@ -201,6 +201,10 @@ Para probar la captura manualmente, ejecuta `npm run dev`, abre `http://localhos
 
 El check público del kit mostró coincidencias de texto legítimo (`js-tokens`, `resolveDmxColorTokens`, la ruta sensible `/token` y documentación de seguridad) y aun así terminó con `PUBLIC_OK` y código 0. Su búsqueda está negada con `! rg` bajo `set -e`, por lo que los hallazgos no hacen fallar el script; sirve como check mínimo de estructura, no como detector de secretos. Revisé las coincidencias mostradas y no vi credenciales reales; no borré documentación ni alteré el checker.
 
+## Estrategia de pruebas y CI (Semana 8)
+
+La matriz de riesgos, alcance de cada capa, comandos reproducibles y límites están en [docs/test-strategy.md](docs/test-strategy.md). El workflow `.github/workflows/academic-evaluation.yml` ejecuta instalación limpia, lint, typecheck, Vitest con cobertura/reporte JUnit, pruebas starter y build; publica reportes aunque falle una etapa. El workflow incorpora el E2E cuando existe `tests/e2e/` y entonces exige `npm run test:e2e`; esa suite la aporta el trabajo #40. Para verificar localmente: `npm ci`, `npm run lint`, `npx tsc --noEmit`, `npm test` y `npm run build`; `make verify` ejecuta la verificación agregada existente. El workflow necesitará una ejecución remota sobre el SHA final para enlazar sus artefactos; no se afirma aquí un resultado de Actions aún no observado.
+
 ## Capacidades del dispositivo (Semana 6)
 
 En `/inspecciones`, la cámara y la geolocalización son opcionales y solo se solicitan al activar sus controles. Una foto o ubicación puede aparecer temporalmente durante la captura, pero se descarta al guardar o cancelar. No se incluye en IndexedDB, en la cola offline ni en sincronización. Los permisos denegados, APIs ausentes y errores de dispositivo no bloquean el registro sintético.
