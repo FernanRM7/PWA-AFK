@@ -31,6 +31,9 @@ jobs:
         run: npm run test:vitest
       - name: Starter tests
         run: npm run test:starter
+      - name: Install Chromium for E2E tests
+        if: ${{ hashFiles('tests/e2e/**') != '' }}
+        run: npx playwright install --with-deps chromium
       - name: E2E tests (when supplied by the W08 E2E contribution)
         if: ${{ hashFiles('tests/e2e/**') != '' }}
         run: npm run test:e2e

@@ -3,6 +3,8 @@ node_modules/
 out/
 coverage/
 *.log
+test-results/
+playwright-report/
 .env*
 !.env.example
 reports/verification.json

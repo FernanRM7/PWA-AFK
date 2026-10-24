@@ -199,6 +199,20 @@ Las pruebas de `tests/storage.spec.ts`, `tests/queue.spec.ts` y `tests/sync.spec
 
 Para probar la captura manualmente, ejecuta `npm run dev`, abre `http://localhost:3000/inspecciones`, crea un registro sintético sin conexión y vuelve a conectar el navegador. La simulación confirma el flujo local, pero no demuestra entrega ni deduplicación en un servidor remoto real.
 
+### Pruebas E2E de navegador (W08)
+
+Instala las dependencias y el navegador Chromium una vez, y ejecuta los dos escenarios de extremo a extremo:
+
+```bash
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+`npm run test:e2e` compila la app y arranca automáticamente el servidor de producción local (`next start`) en `http://127.0.0.1:3000`; no hace falta iniciar `npm run dev` en otra terminal. El servidor existente se reutiliza fuera de CI. Los casos usan contextos Chromium aislados, limpian IndexedDB/cachés/cookies antes de cada flujo, datos sintéticos y la emulación de conexión de Playwright. El caso de capacidad hace que la API de geolocalización no esté disponible; no requiere cámara, GPS ni permisos físicos. Las aserciones inspeccionan la UI y el contenido real de IndexedDB tras guardar, recargar y reconectar.
+
+El transporte de sincronización sigue siendo sintético y local. Estos E2E verifican el flujo de interfaz, persistencia, transición a sincronizado y que no se duplica el registro ni se reenvía tras la recarga; no verifican entrega, idempotencia ni disponibilidad de un backend remoto, ni reemplazan pruebas en navegadores/dispositivos distintos de Chromium.
+
 El check público del kit mostró coincidencias de texto legítimo (`js-tokens`, `resolveDmxColorTokens`, la ruta sensible `/token` y documentación de seguridad) y aun así terminó con `PUBLIC_OK` y código 0. Su búsqueda está negada con `! rg` bajo `set -e`, por lo que los hallazgos no hacen fallar el script; sirve como check mínimo de estructura, no como detector de secretos. Revisé las coincidencias mostradas y no vi credenciales reales; no borré documentación ni alteré el checker.
 
 ## Estrategia de pruebas y CI (Semana 8)
