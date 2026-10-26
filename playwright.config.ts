@@ -5,7 +5,10 @@ export default defineConfig({
   testMatch: "**/*.e2e.ts",
   fullyParallel: false,
   workers: 1,
-  reporter: "list",
+  reporter: [
+    ["list"],
+    ["junit", { outputFile: "reports/playwright-junit.xml" }],
+  ],
   use: {
     baseURL: "http://127.0.0.1:3000",
     ...devices["Desktop Chrome"],

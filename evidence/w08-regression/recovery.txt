@@ -1,0 +1,19 @@
+
+ RUN  v4.1.12 /Users/childe/projects/PWA-AFK
+
+ ↓ tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > POSITIVO: una inspección pending se envía una vez y queda synced
+ ✓ tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > NEGATIVO: una inspección ya synced no se vuelve a enviar 1ms
+ ↓ tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > NEGATIVO: una inspección failed no se reenvía sola al sincronizar
+ ↓ tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > POSITIVO: el reintento manual reinicia los intentos, limpia el error y reenvía
+ ↓ tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > POSITIVO: una inspección que quedó en syncing (app cerrada a medias) se recupera y se envía
+ ↓ tests/unit/cola.spec.ts > regla: encolar es idempotente y exige guardado previo > NEGATIVO: no encola una inspección que no está guardada localmente
+ ↓ tests/unit/cola.spec.ts > regla: encolar es idempotente y exige guardado previo > POSITIVO: un registro heredado sin metadatos recibe una clave estable y se escribe una sola vez
+ ↓ tests/unit/cola.spec.ts > regla: una sola corrida a la vez > dos sincronizaciones simultáneas comparten la misma corrida y no duplican el envío
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 7 skipped (8)
+   Start at  21:47:08
+   Duration  186ms (transform 25ms, setup 0ms, import 34ms, tests 2ms, environment 0ms)
+
+
+exit_code=0

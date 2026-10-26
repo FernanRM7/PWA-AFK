@@ -46,6 +46,8 @@ jobs:
           name: w08-test-results
           path: |
             reports/vitest-junit.xml
+            reports/playwright-junit.xml
             coverage/
+            test-results/
           if-no-files-found: warn
           retention-days: 14

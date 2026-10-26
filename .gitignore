@@ -8,6 +8,8 @@ playwright-report/
 .env*
 !.env.example
 reports/verification.json
+reports/*.xml
+tsconfig.tsbuildinfo
 bun.lock
 .DS_Store
 

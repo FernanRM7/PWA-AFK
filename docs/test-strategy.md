@@ -2,7 +2,7 @@
 
 ## Alcance y diagnóstico inicial
 
-La aplicación ya contiene almacenamiento local, cola de sincronización y capacidades opcionales; el backend sigue siendo sintético. El inventario del checkout al iniciar este trabajo contiene pruebas en `tests/*.spec.ts` (Vitest) y pruebas de shell en `tests/*.spec.mjs`, pero aún no contiene `tests/unit/`, `tests/integration/` ni `tests/e2e/`. Por tanto, los casos descritos a continuación son la estrategia y el contrato de trabajo; no se afirma que esos escenarios estén cubiertos hasta que existan pruebas y se ejecuten. La suite actual se ejecuta con `npm test` y compila con `npm run build`.
+La aplicación contiene almacenamiento local, cola de sincronización y capacidades opcionales; el backend de sincronización sigue siendo sintético. En el diagnóstico inicial de Semana 8 estaban las pruebas existentes en `tests/*.spec.ts` y las de shell en `tests/*.spec.mjs`, pero faltaban `tests/unit/`, `tests/integration/` y `tests/e2e/`. Esta entrega agrega esas tres capas; sus límites se describen en cada riesgo y en `evidence/individual.md`.
 
 ## Matriz riesgo–capa
 
@@ -22,19 +22,31 @@ Requisitos declarados en `package.json`: Node.js `>=20.19.0`, npm `>=10.0.0`.
 
 - Instalación limpia: `npm ci`.
 - Lint: `npm run lint` (`next lint`, configuración `next/core-web-vitals`).
-- Suite existente (pruebas starter y Vitest): `npm test`.
-- Vitest con cobertura V8 y reporte JUnit: `npm run test:vitest` (filtrar con `npm run test:vitest -- tests/ruta.spec.ts`). Los archivos bajo `tests/**/*.spec.ts` se descubren automáticamente, incluidas las futuras carpetas `tests/unit/` y `tests/integration/`.
+- Pruebas starter, shell y Vitest: `npm test` (`npm run test:starter` seguido de Vitest).
+- Vitest con cobertura V8 y reporte JUnit: `npm run test:vitest` (filtrar con `npm run test:vitest -- tests/ruta.spec.ts`). Descubre `tests/**/*.spec.ts`, incluidas las capas `unit` e `integration`.
+- E2E en Chromium y reporte JUnit: `npm run test:e2e`; compila y arranca automáticamente el servidor de producción definido en `playwright.config.ts`.
 - Tipos: `npx tsc --noEmit`.
 - Build: `npm run build`.
 - Verificación agregada actual: `make verify` (alias de `npm run verify`, ejecuta pruebas y build y guarda `reports/verification.json`).
-- Arranque para E2E: `npm run build && npm run start`; el servidor local queda en `http://localhost:3000` y se detiene con Ctrl+C. Los E2E deben esperar disponibilidad del servidor y limpiar almacenamiento antes/después. Al integrarse `tests/e2e/`, el workflow espera un script `npm run test:e2e` y lo hará obligatorio.
+- Arranque para E2E: lo administra Playwright con `npm run build && npm run start -- --hostname 127.0.0.1`, en `http://127.0.0.1:3000`; ejecuta `npx playwright install chromium` una vez por entorno local.
+- Lint, tipos y build por separado: `npm run lint`, `npx tsc --noEmit` y `npm run build`.
 
-En el checkout inicial no había comando de lint ni cobertura; este cambio configura ESLint y cobertura V8/JUnit. La automatización E2E aún depende del aporte #40: el workflow no inventa una prueba ni la ejecuta antes de que exista `tests/e2e/`; al aparecer esa suite, la etapa invoca `test:e2e` y falla si falta el script o una prueba falla. La cobertura es diagnóstico, no una meta porcentual.
+En el checkout inicial no había comando de lint ni cobertura; esta entrega agrega ESLint, cobertura V8 y reportes JUnit. `make verify` sigue siendo el alias de `npm run verify` y ejecuta `npm test` más `npm run build`; lint, tipos y E2E se ejecutan mediante sus comandos explícitos y son etapas obligatorias en Actions. La cobertura es diagnóstica, no una meta porcentual.
 
 ## Defecto controlado y resultados
 
-No se ha ejecutado una mutación controlada en esta contribución. Cuando exista una prueba ejecutable de deduplicación, demostrarlo en una rama temporal: quitar la protección de duplicados, ejecutar el caso enfocado y conservar salida/código de fallo; restaurar el código, repetir y conservar el resultado exitoso. Enlazar ambos reportes en esta sección y en `evidence/individual.md`. Nunca integrar la mutación. No declarar recuperación hasta observarla.
+La detección de duplicados se verificó en la rama local temporal `codex/w08-regression-proof`, creada desde `fd6979099ae99a1ae2bdd24381c9ee37818b2540` y eliminada después de la comprobación. Se cambió temporalmente la guarda de `syncPending` para que omitiera solo `failed`, reenviando por error registros `synced`.
+
+- Fallo esperado: `npx vitest run tests/unit/cola.spec.ts -t 'ya synced no se vuelve a enviar' --reporter=verbose` terminó con código 1; el transporte fue llamado una vez y falló `expect(transporte).not.toHaveBeenCalled()`. La salida completa está en [failure.txt](../evidence/w08-regression/failure.txt).
+- Recuperación: se restauró la guarda `synced || failed`; el mismo comando terminó con código 0 (1 prueba aprobada). La salida completa está en [recovery.txt](../evidence/w08-regression/recovery.txt).
+- La mutación no se confirmó ni se subió; el código productivo conserva la protección.
+
+## Resultados reproducibles de cierre
+
+En esta sesión, sobre la rama del PR antes de publicarse el ajuste de reportes: `npm ci` terminó correctamente (15 vulnerabilidades transitivas reportadas: 3 moderadas, 10 altas y 2 críticas); `npm run lint` pasó con la advertencia ya existente por `<img>` en `src/app/inspecciones/page.tsx:558`; `npx tsc --noEmit` pasó; `npm run test:vitest` aprobó 18 archivos y 124 pruebas y generó JUnit (63.38% statements, 57.5% branches, 53.9% functions, 65.85% lines); `npm run test:starter` pasó; `npm run test:e2e` aprobó 2 escenarios; `make verify` pasó con 18 archivos, 124 pruebas y build de seis rutas. El primer intento E2E local fue impedido por la política de red del sandbox (`listen EPERM` en `127.0.0.1:3000`); al repetir con acceso local ampliado, ambos escenarios pasaron.
+
+La ejecución remota previa en el SHA base `fd6979099ae99a1ae2bdd24381c9ee37818b2540` está [en Actions](https://github.com/FernanRM7/PWA-AFK/actions/runs/40147238925). El ajuste de reportes de Playwright se valida con el siguiente run del SHA actualizado; el cierre del issue #42 conserva ese SHA, su enlace de Actions y sus artefactos.
 
 ## Límites conocidos
 
-La implementación no usa backend remoto; una respuesta sintética solo demuestra el comportamiento local. Un estado verde de Actions verifica únicamente los comandos que el workflow realmente ejecuta y no equivale a calificación académica. Los artefactos de CI dependen de la ejecución remota del SHA final; los enlaces se añadirán tras esa ejecución.
+La implementación no usa backend remoto; una respuesta sintética solo demuestra el comportamiento local. E2E se ejecuta en Chromium y no cubre otros navegadores, permisos físicos ni dispositivos reales. Actions publica, aun cuando falle una etapa, `reports/vitest-junit.xml`, `reports/playwright-junit.xml`, `coverage/` y `test-results/` (incluidas trazas de fallos disponibles). Las ejecuciones y artefactos W08 están en [GitHub Actions](https://github.com/FernanRM7/PWA-AFK/actions/workflows/academic-evaluation.yml); el issue [#42](https://github.com/FernanRM7/PWA-AFK/issues/42) registra el SHA y enlace exactos de la ejecución final después del push. Un estado verde verifica los comandos del workflow; no equivale a calificación académica.
