@@ -1,0 +1,93 @@
+
+ RUN  v4.1.12 /Users/childe/projects/PWA-AFK
+
+ ↓ tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > POSITIVO: una inspección pending se envía una vez y queda synced
+ × tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > NEGATIVO: una inspección ya synced no se vuelve a enviar 6ms
+   → expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      Object {
+        "createdAt": "2026-10-24T10:00:00.000Z#000001",
+        "date": "2026-10-24",
+        "findings": 0,
+        "id": "inspection-unit-001",
+        "inspector": "Técnica sintética A",
+        "location": "Laboratorio sintético",
+        "schemaVersion": 2,
+        "status": "ok",
+        "summary": "Registro sintético para reglas de cola.",
+        "sync": Object {
+          "attempts": 2,
+          "idempotencyKey": "inspection:inspection-unit-001",
+          "status": "syncing",
+        },
+        "updatedAt": "2026-10-24T10:00:00.000Z",
+      },
+      "inspection:inspection-unit-001",
+    ]
+
+
+Number of calls: 1
+
+ ↓ tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > NEGATIVO: una inspección failed no se reenvía sola al sincronizar
+ ↓ tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > POSITIVO: el reintento manual reinicia los intentos, limpia el error y reenvía
+ ↓ tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > POSITIVO: una inspección que quedó en syncing (app cerrada a medias) se recupera y se envía
+ ↓ tests/unit/cola.spec.ts > regla: encolar es idempotente y exige guardado previo > NEGATIVO: no encola una inspección que no está guardada localmente
+ ↓ tests/unit/cola.spec.ts > regla: encolar es idempotente y exige guardado previo > POSITIVO: un registro heredado sin metadatos recibe una clave estable y se escribe una sola vez
+ ↓ tests/unit/cola.spec.ts > regla: una sola corrida a la vez > dos sincronizaciones simultáneas comparten la misma corrida y no duplican el envío
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/cola.spec.ts > regla: solo se envía lo que corresponde > NEGATIVO: una inspección ya synced no se vuelve a enviar
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      Object {
+        "createdAt": "2026-10-24T10:00:00.000Z#000001",
+        "date": "2026-10-24",
+        "findings": 0,
+        "id": "inspection-unit-001",
+        "inspector": "Técnica sintética A",
+        "location": "Laboratorio sintético",
+        "schemaVersion": 2,
+        "status": "ok",
+        "summary": "Registro sintético para reglas de cola.",
+        "sync": Object {
+          "attempts": 2,
+          "idempotencyKey": "inspection:inspection-unit-001",
+          "status": "syncing",
+        },
+        "updatedAt": "2026-10-24T10:00:00.000Z",
+      },
+      "inspection:inspection-unit-001",
+    ]
+
+
+Number of calls: 1
+
+ ❯ tests/unit/cola.spec.ts:66:32
+     64|         const resumen = await cola.syncPending();
+     65|
+     66|         expect(transporte).not.toHaveBeenCalled();
+       |                                ^
+     67|         expect(resumen.synced).toBe(1);
+     68|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 skipped (8)
+   Start at  21:47:01
+   Duration  316ms (transform 60ms, setup 0ms, import 82ms, tests 8ms, environment 1ms)
+
+
+exit_code=1
