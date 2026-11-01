@@ -3,6 +3,7 @@ import {
     obtenerTodasLasInspecciones,
     reemplazarInspeccion,
 } from "@/lib/storage/inspection-store";
+import { SAFE_SYNC_ERROR_MESSAGE } from "@/lib/security/input-validation";
 import type {
     EstadoColaSincronizacion,
     InspeccionGuardada,
@@ -163,13 +164,12 @@ export function createSyncQueue({
                     state = { ...state, status: "synced", lastError: undefined };
                     await storage.update(inspection.id, state);
                     break;
-                } catch (error) {
-                    const lastError = error instanceof Error ? error.message : "Error de sincronización desconocido.";
+                } catch {
                     const exhausted = state.attempts >= MAX_SYNC_ATTEMPTS;
                     state = {
                         ...state,
                         status: exhausted ? "failed" : "pending",
-                        lastError,
+                        lastError: SAFE_SYNC_ERROR_MESSAGE,
                     };
                     await storage.update(inspection.id, state);
                     if (exhausted) break;

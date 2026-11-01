@@ -126,6 +126,25 @@ La evidencia de CI debe conservarse desde la ejecución del workflow correspondi
 
 Inviten a los integrantes y al docente al mismo repositorio privado. Cada persona registra su evidencia en una sección de `evidence/individual.md`. Todos entregan en Classroom el mismo SHA final y enlaces, identificando su sección. El formato exacto está en `ACTIVIDAD-01.md`; no se requiere un pull request adicional ni una copia por alumno.
 
+## Semana 09 — seguridad y privacidad
+
+La actividad W09 continúa esta aplicación con registros sintéticos. Para iniciar localmente usa `npm ci` y `npm run dev`. Los controles de cabeceras se generan por respuesta en `src/middleware.ts`: la CSP usa un nonce para scripts y limita los recursos al mismo origen, con excepciones documentadas para estilos inline de los gráficos y el avatar de `i.pravatar.cc`. `public/robots.txt` indica una política de rastreo; no protege rutas ni sustituye autenticación.
+
+Antes de entregar, ejecuta desde la raíz del repositorio:
+
+```bash
+npm ci
+npm run lint
+npx tsc --noEmit
+npm test
+npm run build
+make verify
+```
+
+Las pruebas de `tests/security.spec.ts` cubren validación de entradas y manejo de errores; `tests/security-platform.spec.ts` comprueba las directivas de plataforma y `robots.txt`. El análisis de amenazas, inventario y límites están en `docs/threat-model.md` y `docs/privacy-data-inventory.md`. La evidencia individual está en `evidence/individual.md`; registra ahí el SHA final y el enlace a Actions después de que corran los checks sobre ese commit. El workflow `.github/workflows/week-09-security-privacy.yml` publica resultados de pruebas y cobertura por 14 días.
+
+Las pruebas inspeccionan el contrato fuente de CSP y headers; también se deben comprobar las cabeceras HTTP efectivas en navegador y en el alojamiento. El middleware hace dinámicas las rutas de aplicación para emitir nonces. El alojamiento debe servir HTTPS. La aplicación no tiene autenticación, cifrado en reposo ni borrado automático, así que no se deben introducir datos personales reales, tokens ni secretos.
+
 ## Estructura y límites
 
 - `src/app/`: pantalla Next.js.

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# This file guides compliant crawlers; it does not restrict access.

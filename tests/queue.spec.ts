@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createSyncQueue, MAX_SYNC_ATTEMPTS, resumeQueueOnOnline } from "../src/lib/sync/queue";
 import type { EstadoColaSincronizacion, InspeccionGuardada } from "../src/lib/storage/schema";
+import { SAFE_SYNC_ERROR_MESSAGE } from "../src/lib/security/input-validation";
 
 function syntheticInspection(id = "inspection-synthetic-001"): InspeccionGuardada {
     return {
@@ -124,7 +125,23 @@ describe("cola de sincronización offline", () => {
         expect(resume).toHaveBeenCalledOnce();
     });
 
-    it("no marca como sincronizado un acuse con otra clave", async () => {
+    it("no persiste mensajes de error externos que podrían contener secretos", async () => {
+        const inspection = syntheticInspection();
+        const storage = createMemoryStorage([inspection]);
+        const queue = createSyncQueue({
+            storage,
+            transport: vi.fn().mockRejectedValue(new Error("synthetic-secret-token-from-remote")),
+            wait: async () => undefined,
+        });
+
+        const result = await queue.syncPending();
+
+        expect(result.failed).toBe(1);
+        expect(storage.records.get(inspection.id)?.sync.lastError).toBe(SAFE_SYNC_ERROR_MESSAGE);
+        expect(storage.records.get(inspection.id)?.sync.lastError).not.toContain("synthetic-secret-token-from-remote");
+    });
+
+    it("rechaza un acuse con otra clave de idempotencia", async () => {
         const inspection = syntheticInspection();
         const storage = createMemoryStorage([inspection]);
         const queue = createSyncQueue({
@@ -136,6 +153,7 @@ describe("cola de sincronización offline", () => {
         const result = await queue.syncPending();
 
         expect(result.failed).toBe(1);
-        expect(storage.records.get(inspection.id)?.sync.lastError).toContain("no coincide");
+        expect(storage.records.get(inspection.id)?.sync.status).toBe("failed");
+        expect(storage.records.get(inspection.id)?.sync.lastError).toBe(SAFE_SYNC_ERROR_MESSAGE);
     });
 });
