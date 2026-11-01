@@ -1,6 +1,6 @@
 # Inventario de datos y privacidad — PWA de inspecciones de laboratorio
 
-Fecha : 31 de octubre de 2026 · Rama `feat/week-09-security-privacy` · Commit base `9bc8802`.
+Fecha: 1 de noviembre de 2026 · Rama `feat/week-09-security-privacy` · Revisión sobre `01be630` más cambios locales W09.
 
 ## Alcance y método
 
@@ -10,7 +10,7 @@ Este inventario describe qué datos toca la aplicación hoy, dónde viven, para 
 
 - Qué recibe el servicio de imágenes de terceros más allá de lo que implica cualquier petición HTTP.
 - Si la petición de la imagen de avatar ocurre antes de abrir el menú de notificaciones. Solo la vimos al abrirlo.
-- Qué cabeceras o políticas añade el alojamiento: el repositorio no define ninguna.
+- Si el alojamiento conserva o reemplaza las cabeceras definidas en `src/middleware.ts`; debe comprobarse en el entorno desplegado.
 - El comportamiento en navegadores y dispositivos reales: las pruebas usan APIs simuladas.
 - Que la cookie `sidebar_state` aparezca en un navegador tras abrir o cerrar la barra lateral: leímos el código, pero no vimos la cookie.
 - El contenido de los artefactos que sube el CI.
@@ -40,7 +40,8 @@ No encontramos código de autenticación ni de manejo de credenciales en los mó
 - No hay cifrado en reposo ni inicio de sesión: quien tenga acceso al navegador del dispositivo puede leer IndexedDB y las cachés.
 - La aplicación no ofrece forma de borrar registros.
 - La retención no tiene garantía de permanencia: el almacenamiento no es persistente.
-- `lastError` guarda el texto del mensaje de error del transporte. Hoy son mensajes propios, pero con un servidor real podría incluir texto del servidor.
+- `lastError` persiste un mensaje genérico (`SAFE_SYNC_ERROR_MESSAGE`), no el texto del error del transporte; `tests/queue.spec.ts` comprueba que un secreto sintético incluido en el error no se conserva.
+- `src/middleware.ts` genera un nonce para cada respuesta HTML y construye la CSP; `script-src` no permite scripts inline sin nonce. La CSP permite `i.pravatar.cc` en imágenes y `'unsafe-inline'` en estilos para los gráficos actuales. Estas excepciones se deben revisar si cambia el framework o la implementación.
 - Si los datos fueran reales, este inventario no bastaría: habría que definir finalidades, retención y borrado, y revisar el transporte.
 
 ## Fallos y hallazgos
@@ -55,7 +56,7 @@ No encontramos código de autenticación ni de manejo de credenciales en los mó
 ## Supuestos y decisiones
 
 - La validación, los límites de entrada y la exclusión de mensajes externos de error del almacenamiento se implementan en `src/lib/security/input-validation.ts`, `src/lib/storage/schema.ts` y `src/lib/sync/queue.ts`. Los riesgos de retención, almacenamiento local y uso de datos sintéticos siguen abiertos.
-- Asumimos que el alojamiento sirve la aplicación por HTTPS. No lo verificamos.
+- `src/middleware.ts` entrega CSP y headers defensivos en rutas de aplicación; no verificamos que el alojamiento los conserve ni asumimos que `robots.txt` controle acceso. Se asume HTTPS en despliegue, pero no se verificó.
 - Una petición HTTP a un tercero implica que este recibe al menos la IP y el navegador. Es una consecuencia del protocolo, no una medición.
 - Las cookies que aparezcan en `localhost` pueden venir de otros proyectos locales, porque el navegador las comparte entre puertos. Solo inventariamos las que escribe el código de este repositorio.
 

@@ -1,16 +1,16 @@
 # Modelo de amenazas — PWA de inspecciones de laboratorio
 
-Fecha : 31 de octubre de 2026 · Rama `feat/week-09-security-privacy` · Commit base `9bc8802`.
+Fecha: 1 de noviembre de 2026 · Rama `feat/week-09-security-privacy` · Revisión sobre `01be630` más cambios locales W09.
 
 ## Alcance y método
 
-Este análisis describe lo que el repositorio hace hoy. Lo armamos leyendo el código (`public/sw.js`, `src/lib/storage/`, `src/lib/sync/`, `src/lib/device/`, `src/lib/notifications/`, `src/app/inspecciones/page.tsx`, `src/components/`) y ejecutando `grep`, `npm ls`, `npm run lint`, `npm audit --omit=dev` y una prueba temporal sobre el Service Worker ,no está en el commit
+Este análisis describe el comportamiento observado en el repositorio. Se revisaron `public/sw.js`, `src/lib/storage/`, `src/lib/sync/`, `src/lib/device/`, `src/lib/notifications/`, `src/app/inspecciones/page.tsx`, `src/components/`, `next.config.mjs` y los workflows; también se ejecutaron búsquedas de código, `npm ls`, `npm run lint`, `npm audit --omit=dev` y pruebas locales. Una comprobación temporal del Service Worker no forma parte del repositorio.
 
 Todos los datos son sintéticos.
 
 ## Qué no se verificó
 
-- Las cabeceras que agregue el servicio de alojamiento. El repositorio no define ninguna (`next.config.mjs` solo tiene `reactStrictMode`, y no hay middleware ni archivos como `vercel.json`, `netlify.toml` o `public/_headers`), pero el despliegue podría añadirlas.
+- Si el alojamiento conserva o reemplaza las cabeceras definidas en `src/middleware.ts`; el comportamiento del entorno desplegado requiere verificación aparte.
 - El comportamiento en navegadores y dispositivos reales, las pruebas usan APIs simuladas.
 - Un servidor de sincronización real, el transporte es sintético (`syntheticSyncTransport` en `src/lib/sync/queue.ts`).
 - Si un Service Worker de un navegador real recibe el encabezado `Cookie` en `request.headers`. Las pruebas usan solicitudes simuladas con ese encabezado, y es posible que los navegadores no lo expongan, lo que dejaría sin efecto esa exclusión de `isCacheable`.
@@ -40,8 +40,8 @@ Todos los datos son sintéticos.
 | # | Amenaza | Prob. | Impacto | Controles existentes y evidencia | Brecha / riesgo residual |
 |---|---|---|---|---|---|
 | T1 | Dependencias con vulnerabilidades conocidas, entre ellas `next@14.2.35` (crítica) | Alta | Alto | `package-lock.json` y `npm ci` fijan versiones. Medición del 31/10/2026: `npm audit --omit=dev` reporta 19 vulnerabilidades (1 baja, 8 moderadas, 8 altas, 2 críticas). | La corrección que propone npm sube Next a la versión 16, un cambio mayor que queda fuera del alcance de este issue. Además, `npm ls` muestra que `@modelcontextprotocol/sdk`, `hono`, `express` y `proxy-addr` cuelgan de `shadcn`, y ningún archivo de `src/` importa `shadcn` (`grep`): es una herramienta de línea de comandos declarada en `dependencies`. Pendiente: planificar la actualización de Next y evaluar mover `shadcn` a `devDependencies`. Riesgo residual aceptado temporalmente. |
-| T2 | Script inyectado (XSS) que lee IndexedDB o las cachés | Baja | Alto | En `src/` y `public/` el único `dangerouslySetInnerHTML` está en `src/components/ui/chart.tsx`, y sus colores son constantes del código (`var(--chart-1)`, `var(--chart-2)` en `dashboard-charts.tsx`). No encontramos otro uso de `innerHTML`, `eval`, `new Function` ni `document.write`. `validarBorradorInspeccion` descarta propiedades ajenas (`tests/unit/captura.spec.ts`). | El repositorio no define Content-Security-Policy, y sin CSP un fallo de inyección tendría efecto completo. Pendiente: definir una CSP y comprobarla. |
-| T2b | Petición a un tercero para la imagen de avatar `https://i.pravatar.cc/96?img=47`, dentro del menú de notificaciones del encabezado del panel (`src/components/dashboard-01/dashboard-header.tsx`, línea 196). El encabezado aparece en `/` y `/reportes`, no en `/inspecciones` | Baja | Bajo | `isCacheable` descarta otros orígenes: en DevTools la petición tomó la rama de `fetch` directo de `sw.js` (línea 56) y no se guardó. El componente tiene `AvatarFallback` ("PR") si la imagen no carga. La URL es fija y no lleva datos de inspecciones. | Es una conexión a un tercero fuera del control del equipo, y el navegador le revela al menos la IP y el navegador. No verificamos qué política de referrer se aplica (el repositorio no define ninguna). Una CSP futura tendría que permitir ese origen o quitar la imagen. Pendiente: sustituirla por un recurso local. No se corrige en este issue. |
+| T2 | Script inyectado (XSS) que lee IndexedDB o las cachés | Baja | Alto | `src/middleware.ts` genera un nonce criptográfico por respuesta y lo incluye en la CSP de la solicitud y la respuesta; `script-src` no usa `unsafe-inline` ni comodines. Se limitan `object-src`, `base-uri` y el encuadre. Los estilos inline se permiten para los gráficos de `src/components/ui/chart.tsx`; el avatar conserva una excepción de imagen para `i.pravatar.cc`. | `'unsafe-inline'` en estilos reduce la protección frente a inyección de estilos. La app aún contacta a un tercero para el avatar. Validar las cabeceras en el alojamiento y revisar compatibilidad ante cambios de Next.js. |
+| T2b | Petición a un tercero para la imagen de avatar `https://i.pravatar.cc/96?img=47`, dentro del menú de notificaciones del encabezado del panel (`src/components/dashboard-01/dashboard-header.tsx`) | Baja | Bajo | `img-src` permite exclusivamente ese origen externo además del mismo origen y datos; `Referrer-Policy` limita el referrer de origen cruzado. La URL es fija y no lleva datos de inspecciones. | El servicio externo recibe al menos IP y datos básicos de navegador. Pendiente: sustituir la imagen por un recurso local si se elimina el tercero. |
 | T3 | Datos reales capturados en campos de texto libre (`inspector`, `summary`) y guardados sin límite de tiempo | Media | Medio | `validarBorradorInspeccion` normaliza texto, limita laboratorio (120), inspector (80), resumen (1.000) y hallazgos (0–100.000), valida fechas de calendario y descarta campos ajenos; `tests/security.spec.ts` cubre límites, formatos y datos extra. | Los límites no detectan secretos ni impiden escribir datos reales en texto permitido. No hay función de borrado en `inspection-store.ts`, así que los datos se quedan hasta que alguien borre los datos del sitio desde el navegador. |
 | T4 | Respuestas con `Cache-Control: no-store` guardadas en caché por el Service Worker | Media | Medio | `isCacheable` en `public/sw.js` excluye métodos no GET, otros orígenes, rutas sensibles y solicitudes con `Authorization`, `Cookie` o `no-store` (`tests/offline.spec.ts`). | **Fallo encontrado:** `no-store` se revisa en la solicitud, no en la respuesta. Una prueba temporal (no incluida en el commit) mostró que una respuesta con `no-store` sí se guarda en caché. Hoy solo afecta contenido público y sintético. Pendiente: revisar también el encabezado de la respuesta. |
 | T4b | Lectura de los datos guardados por otra persona con acceso al dispositivo | Media | Medio | Ninguno técnico: no hay inicio de sesión ni cifrado en reposo. | Riesgo aceptado mientras los datos sean sintéticos. Si se usaran datos reales, esto bloquearía su uso. |
@@ -55,7 +55,7 @@ Todos los datos son sintéticos.
 1. El Service Worker guarda en caché respuestas con `Cache-Control: no-store` (T4).
 2. Hay una petición a un tercero para una imagen de avatar de plantilla (T2b).
 3. No existe borrado de registros desde la aplicación (T3).
-4. El repositorio no define Content-Security-Policy (T2).
+4. La CSP permite estilos inline para los gráficos y el avatar externo; `script-src` usa nonce dinámico sin `unsafe-inline`.
 5. `npm audit --omit=dev` reporta 19 vulnerabilidades, incluida una crítica en `next` (T1).
 6. La aplicación escribe una cookie de preferencia que nadie lee (T8).
 7. `npm run lint` pasa con una advertencia por usar `<img>` en `src/app/inspecciones/page.tsx`, línea 558.
@@ -69,7 +69,7 @@ Todos los datos son sintéticos.
 
 ## Riesgos residuales aceptados por ahora
 
-T1 (actualizar Next), T2 (sin CSP) y T4b (sin cifrado ni sesión) quedan abiertos hasta que haya un plan de actualización y se decida si la aplicación va a tratar datos reales. T2b y T8 son de impacto bajo y quedan pendientes de sustituir o eliminar.
+T1 (actualizar Next), la excepción de estilos inline de T2 y T4b (sin cifrado ni sesión) quedan abiertos hasta que haya un plan de actualización y se decida si la aplicación va a tratar datos reales. T2b y T8 son de impacto bajo y quedan pendientes de sustituir o eliminar.
 
 ## Cómo repetir las comprobaciones
 

@@ -24,6 +24,16 @@ jobs:
           cache: npm
       - name: Install clean dependencies
         run: npm ci
+      - name: Check Week 09 deliverables
+        run: |
+          test -f docs/threat-model.md
+          test -f docs/privacy-data-inventory.md
+          test -f src/lib/security/input-validation.ts
+          test -f tests/security.spec.ts
+          test -f tests/security-platform.spec.ts
+          test -f src/middleware.ts
+          test -f public/robots.txt
+          test -f evidence/individual.md
       - name: Lint
         run: npm run lint
       - name: Type check
