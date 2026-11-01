@@ -20,7 +20,7 @@ Este inventario describe qué datos toca la aplicación hoy, dónde viven, para 
 | ID | Dato | Finalidad | Dónde vive | Retención | ¿Sale del dispositivo? | Evidencia |
 |---|---|---|---|---|---|---|
 | D1 | Inspección sintética: laboratorio, fecha, inspector, estado, hallazgos, resumen | Registrar y consultar inspecciones, también sin conexión | IndexedDB, base `afk-inspections-db`, almacén `inspections` | Sin caducidad definida. No hay función de borrado en la aplicación: los datos se quedan hasta que alguien borre los datos del sitio desde el navegador. No se solicita almacenamiento persistente, así que el navegador podría expulsarlos | No: el transporte es sintético y ningún archivo de `src/` llama a `fetch` | `tests/storage.spec.ts`, `tests/integration/persistencia-offline.spec.ts`; `grep` de `delete` y `clear(` en `inspection-store.ts` sin resultados; `grep` de `storage.persist` sin resultados |
-| D2 | Metadatos de cola: clave `inspection:<id>`, estado, intentos, `lastError` | Reintentar sin crear duplicados | Dentro del mismo registro en IndexedDB | Igual que D1 | No (transporte sintético) | `src/lib/sync/queue.ts`, `tests/queue.spec.ts` |
+| D2 | Metadatos de cola: clave `inspection:<id>`, estado, intentos y error genérico | Reintentar sin crear duplicados | Dentro del mismo registro en IndexedDB | Igual que D1 | No (transporte sintético) | `src/lib/sync/queue.ts` evita persistir mensajes externos sin filtrar; `tests/queue.spec.ts` |
 | D3 | Respuestas HTTP guardadas: `/`, `/manifest.webmanifest` y respuestas GET del mismo origen | Funcionar sin conexión | Cache Storage: `afk-precache-v1` y `afk-runtime-v1` | La precache se reemplaza al cambiar `CACHE_VERSION` (`activate` borra las cachés `afk-*` antiguas). La caché runtime no tiene límite de tamaño ni de antigüedad en el código | No | `public/sw.js`, `tests/service-worker.spec.ts`, `tests/offline.spec.ts` |
 | D4 | Foto de evidencia (`Blob`) y URL de vista previa | Adjuntar evidencia visual opcional durante la captura | Solo memoria del componente | Mientras dura la captura. Se descarta al descartar, cancelar, guardar o desmontar | No. No entra a IndexedDB ni a la cola | `src/lib/device/camera.ts` no importa `storage/` ni `sync/`; `tests/camera.spec.ts`; la ausencia de imagen y de URL `blob:` en IndexedDB se comprobó a mano en W06 |
 | D5 | Coordenadas de ubicación | Mostrar la ubicación de forma temporal y opcional | Estado temporal de la interfaz | Hasta omitir, cancelar, guardar o desmontar | No | `tests/geolocation.spec.ts`: la validación descarta latitud y longitud |
@@ -36,6 +36,7 @@ No encontramos código de autenticación ni de manejo de credenciales en los mó
 ## Límites
 
 - Los datos son sintéticos por convención, no por mecanismo. Los campos `inspector` y `resumen` aceptan texto libre, y el aviso de "sintético" aparece solo en encabezados (`src/app/inspecciones/page.tsx`, líneas 294 y 357), no junto a esos campos.
+- La validación normaliza texto y limita `location` a 120, `inspector` a 80 y `summary` a 1.000 caracteres; `findings` se limita al intervalo entero 0–100.000. Esto no detecta de forma fiable secretos escritos dentro de esos campos: no se deben introducir datos reales ni credenciales.
 - No hay cifrado en reposo ni inicio de sesión: quien tenga acceso al navegador del dispositivo puede leer IndexedDB y las cachés.
 - La aplicación no ofrece forma de borrar registros.
 - La retención no tiene garantía de permanencia: el almacenamiento no es persistente.
@@ -53,7 +54,7 @@ No encontramos código de autenticación ni de manejo de credenciales en los mó
 
 ## Supuestos y decisiones
 
-- Documentamos lo que observamos y no corregimos nada: el alcance de este issue es de documentación.
+- La validación, los límites de entrada y la exclusión de mensajes externos de error del almacenamiento se implementan en `src/lib/security/input-validation.ts`, `src/lib/storage/schema.ts` y `src/lib/sync/queue.ts`. Los riesgos de retención, almacenamiento local y uso de datos sintéticos siguen abiertos.
 - Asumimos que el alojamiento sirve la aplicación por HTTPS. No lo verificamos.
 - Una petición HTTP a un tercero implica que este recibe al menos la IP y el navegador. Es una consecuencia del protocolo, no una medición.
 - Las cookies que aparezcan en `localhost` pueden venir de otros proyectos locales, porque el navegador las comparte entre puertos. Solo inventariamos las que escribe el código de este repositorio.

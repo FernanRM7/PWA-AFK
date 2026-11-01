@@ -83,7 +83,7 @@ describe("captura sin conexión que persiste al recargar", () => {
         expect(persistida.sync).toMatchObject({
             status: "failed",
             attempts: recargada.MAX_SYNC_ATTEMPTS,
-            lastError: "synthetic offline",
+            lastError: "No se pudo completar la sincronización.",
         });
 
         const conRed = vi.fn(async (_inspeccion: unknown, clave: string) => ({ idempotencyKey: clave }));

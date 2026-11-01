@@ -48,10 +48,10 @@ describe("captura inválida", () => {
         ["resumen vacío", { summary: "" }, "El resumen es obligatorio."],
         ["fecha con otro formato", { date: "24/10/2026" }, "La fecha debe tener el formato AAAA-MM-DD."],
         ["estado desconocido", { status: "urgente" }, 'El estado debe ser "ok" o "attention".'],
-        ["hallazgos negativos", { findings: -1 }, "Los hallazgos deben ser un número entero igual o mayor a 0."],
-        ["hallazgos decimales", { findings: 1.5 }, "Los hallazgos deben ser un número entero igual o mayor a 0."],
-        ["hallazgos NaN", { findings: Number.NaN }, "Los hallazgos deben ser un número entero igual o mayor a 0."],
-        ["hallazgos como texto", { findings: "2" }, "Los hallazgos deben ser un número entero igual o mayor a 0."],
+        ["hallazgos negativos", { findings: -1 }, "Los hallazgos deben ser un entero entre 0 y 100000."],
+        ["hallazgos decimales", { findings: 1.5 }, "Los hallazgos deben ser un entero entre 0 y 100000."],
+        ["hallazgos NaN", { findings: Number.NaN }, "Los hallazgos deben ser un entero entre 0 y 100000."],
+        ["hallazgos como texto", { findings: "2" }, "Los hallazgos deben ser un entero entre 0 y 100000."],
     ])("rechaza %s con un único error claro", (_nombre, cambio, mensaje) => {
         const resultado = validarBorradorInspeccion({ ...borradorValido, ...cambio });
 
@@ -75,10 +75,10 @@ describe("captura inválida", () => {
 });
 
 describe("límites conocidos de la validación", () => {
-    it("LÍMITE: acepta fechas con la forma correcta pero imposibles, como 2026-13-45", () => {
+    it("rechaza fechas con formato correcto pero imposibles, como 2026-13-45", () => {
         
         const resultado = validarBorradorInspeccion({ ...borradorValido, date: "2026-13-45" });
 
-        expect(resultado.valido).toBe(true);
+        expect(resultado.valido).toBe(false);
     });
 });
